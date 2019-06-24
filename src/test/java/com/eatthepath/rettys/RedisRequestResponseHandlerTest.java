@@ -5,11 +5,9 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.ThrowingSupplier;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,8 +23,7 @@ class RedisRequestResponseHandlerTest {
 
     @Test
     void testHandleRequestResponse() {
-        final CompletableFuture<Long> future = new CompletableFuture<>();
-        final RedisCommand<Long> command = new RedisCommand<>(future, RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
 
         final Channel channel = new EmbeddedChannel();
         final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
@@ -36,14 +33,13 @@ class RedisRequestResponseHandlerTest {
         requestResponseHandler.write(channelHandlerContext, command, channel.newPromise());
         requestResponseHandler.channelRead(channelHandlerContext, redisResponse);
 
-        final long futureResult = assertTimeoutPreemptively(Duration.ofSeconds(1), future::join);
+        final long futureResult = assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join);
         assertEquals(redisResponse, futureResult);
     }
 
     @Test
     void testHandleRequestErrorResponse() {
-        final CompletableFuture<Long> future = new CompletableFuture<>();
-        final RedisCommand<Long> command = new RedisCommand<>(future, RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
 
         final Channel channel = new EmbeddedChannel();
         final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
@@ -54,15 +50,14 @@ class RedisRequestResponseHandlerTest {
         requestResponseHandler.channelRead(channelHandlerContext, redisException);
 
         final CompletionException completionException =
-                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), future::join));
+                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join));
 
         assertEquals(redisException, completionException.getCause());
     }
 
     @Test
     void testHandleRequestWriteFailure() {
-        final CompletableFuture<Long> future = new CompletableFuture<>();
-        final RedisCommand<Long> command = new RedisCommand<>(future, RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
 
         final Channel channel = new EmbeddedChannel();
         final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
@@ -76,7 +71,7 @@ class RedisRequestResponseHandlerTest {
         writePromise.setFailure(ioException);
 
         final CompletionException completionException =
-                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), future::join));
+                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join));
 
         assertEquals(ioException, completionException.getCause());
     }

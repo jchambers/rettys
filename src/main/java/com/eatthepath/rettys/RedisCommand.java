@@ -33,20 +33,19 @@ class RedisCommand<T> {
     private final Object[] components;
 
     /**
-     * Constructs a Redis command of the given type with the given arguments.
+     * Constructs a Redis command of the given type with the given arguments and response converter.
      *
-     * @param future the future to be notified when the Redis server replies to this command
      * @param responseConverter the converter to be used to interpret the response from the Redis server
      * @param commandType the type of command to execute
      * @param arguments the arguments to pass as part of the command
      */
-    RedisCommand(final CompletableFuture<T> future, final RedisResponseConverter<T> responseConverter, final CommandType commandType, final Object... arguments) {
+    RedisCommand(final RedisResponseConverter<T> responseConverter, final CommandType commandType, final Object... arguments) {
         components = new Object[arguments.length + 1];
 
         components[0] = commandType.getBulkStringBytes();
         System.arraycopy(arguments, 0, components, 1, arguments.length);
 
-        this.future = future;
+        this.future = new CompletableFuture<>();
         this.responseConverter = responseConverter;
     }
 
