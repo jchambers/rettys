@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +26,7 @@ class RedisCommandEncoderTest {
 
     @Test
     void encode() {
-        final RedisCommand command = new RedisCommand(RedisCommand.CommandType.LLEN, "mylist");
+        final RedisCommand<Long> command = new RedisCommand<>(new CompletableFuture<Long>(), RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "mylist");
         final ByteBuf expectedOutput =
                 Unpooled.wrappedBuffer("*2\r\n$4\r\nLLEN\r\n$6\r\nmylist\r\n".getBytes(StandardCharsets.US_ASCII));
 
