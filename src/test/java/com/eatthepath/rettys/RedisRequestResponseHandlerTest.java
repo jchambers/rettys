@@ -75,4 +75,22 @@ class RedisRequestResponseHandlerTest {
 
         assertEquals(ioException, completionException.getCause());
     }
+
+    @Test
+    void testChannelInactiveBeforeReply() {
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisKeyword.LLEN, "test");
+
+        final Channel channel = new EmbeddedChannel();
+        final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
+
+        final ChannelPromise writePromise = channel.newPromise();
+
+        requestResponseHandler.write(channelHandlerContext, command, writePromise);
+        requestResponseHandler.channelInactive(channelHandlerContext);
+
+        final CompletionException completionException =
+                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join));
+
+        assertTrue(completionException.getCause() instanceof IOException);
+    }
 }

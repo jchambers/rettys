@@ -6,6 +6,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -16,6 +17,8 @@ import java.util.Deque;
 class RedisRequestResponseHandler extends ChannelHandlerAdapter implements ChannelInboundHandler, ChannelOutboundHandler {
 
     private final Deque<RedisCommand> pendingCommands = new ArrayDeque<>();
+
+    private static final IOException CHANNEL_CLOSED_EXCEPTION = new IOException("Channel closed before the Redis server could respond.");
 
     private static final Logger log = LoggerFactory.getLogger(RedisRequestResponseHandler.class);
 
@@ -54,6 +57,15 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
     }
 
     @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        for (final RedisCommand pendingCommand : pendingCommands) {
+            pendingCommand.getFuture().completeExceptionally(CHANNEL_CLOSED_EXCEPTION);
+        }
+
+        pendingCommands.clear();
+    }
+
+    @Override
     public void channelRegistered(final ChannelHandlerContext ctx) {
         ctx.fireChannelRegistered();
     }
@@ -66,11 +78,6 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelInactive();
     }
 
     @Override
