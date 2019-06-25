@@ -7,6 +7,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 public class RedisClient {
@@ -39,12 +40,36 @@ public class RedisClient {
     }
 
     public CompletableFuture<Long> llen(final String key) {
-        final RedisCommand<Long> llenCommand = new RedisCommand<>(RedisResponseConverters.integerConverter(),
+        final RedisCommand<Long> llenCommand = new RedisCommand<>(
+                RedisResponseConverters.integerConverter(),
                 RedisKeyword.LLEN,
                 key);
 
         channel.writeAndFlush(llenCommand);
 
         return llenCommand.getFuture();
+    }
+
+    public CompletableFuture<Long> memoryUsage(final byte[] key) {
+        final RedisCommand<Long> memoryUsageCommand = new RedisCommand<>(
+                RedisResponseConverters.integerConverter(),
+                RedisKeyword.MEMORY,
+                RedisKeyword.USAGE,
+                key);
+
+        channel.writeAndFlush(memoryUsageCommand);
+
+        return memoryUsageCommand.getFuture();
+    }
+
+    public CompletableFuture<ScanResponse> scan(final long cursor) {
+        final RedisCommand<ScanResponse> scanCommand = new RedisCommand<>(
+                RedisResponseConverters.scanResponseConverter(),
+                RedisKeyword.SCAN,
+                Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII));
+
+        channel.writeAndFlush(scanCommand);
+
+        return scanCommand.getFuture();
     }
 }
