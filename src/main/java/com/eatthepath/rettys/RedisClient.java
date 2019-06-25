@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class RedisClient {
+public class RedisClient implements RedisCommandExecutor {
 
     private final Channel channel;
 
@@ -44,19 +44,6 @@ public class RedisClient {
     public <T> CompletableFuture<T> executeCommand(final RedisCommand<T> command) {
         channel.writeAndFlush(command);
         return command.getFuture();
-    }
-
-    public CompletableFuture<Long> llen(final String key) {
-        return executeCommand(new RedisCommand<>(RedisResponseConverters.integerConverter(),
-                RedisKeyword.LLEN,
-                key));
-    }
-
-    public CompletableFuture<Long> memoryUsage(final byte[] key) {
-        return executeCommand(new RedisCommand<>(RedisResponseConverters.integerConverter(),
-                RedisKeyword.MEMORY,
-                RedisKeyword.USAGE,
-                key));
     }
 
     public Stream<byte[]> scan() {
