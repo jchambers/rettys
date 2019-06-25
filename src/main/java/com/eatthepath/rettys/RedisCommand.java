@@ -1,6 +1,5 @@
 package com.eatthepath.rettys;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -13,37 +12,19 @@ import java.util.concurrent.CompletableFuture;
  */
 class RedisCommand<T> {
 
-    enum CommandType {
-        LLEN("LLEN");
-
-        private final byte[] bytes;
-
-        CommandType(final String commandName) {
-            this.bytes = commandName.getBytes(StandardCharsets.US_ASCII);
-        }
-
-        public byte[] getBulkStringBytes() {
-            return bytes;
-        }
-    }
+    private final Object[] components;
 
     private final RedisResponseConverter<T> responseConverter;
     private final CompletableFuture<T> future;
-
-    private final Object[] components;
 
     /**
      * Constructs a Redis command of the given type with the given arguments and response converter.
      *
      * @param responseConverter the converter to be used to interpret the response from the Redis server
-     * @param commandType the type of command to execute
-     * @param arguments the arguments to pass as part of the command
+     * @param components TODO
      */
-    RedisCommand(final RedisResponseConverter<T> responseConverter, final CommandType commandType, final Object... arguments) {
-        components = new Object[arguments.length + 1];
-
-        components[0] = commandType.getBulkStringBytes();
-        System.arraycopy(arguments, 0, components, 1, arguments.length);
+    RedisCommand(final RedisResponseConverter<T> responseConverter, final Object... components) {
+        this.components = components;
 
         this.future = new CompletableFuture<>();
         this.responseConverter = responseConverter;

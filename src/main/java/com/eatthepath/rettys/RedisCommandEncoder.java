@@ -46,7 +46,9 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
 
         final byte[] bulkStringBytes;
 
-        if (redisValue instanceof byte[]) {
+        if (redisValue instanceof RedisKeyword) {
+            bulkStringBytes = ((RedisKeyword) redisValue).getBulkStringBytes();
+        } else if (redisValue instanceof byte[]) {
             bulkStringBytes = (byte[]) redisValue;
         } else if (redisValue instanceof String) {
             // TODO Think carefully about choosing character sets for strings

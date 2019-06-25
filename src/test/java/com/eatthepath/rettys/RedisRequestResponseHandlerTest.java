@@ -23,7 +23,7 @@ class RedisRequestResponseHandlerTest {
 
     @Test
     void testHandleRequestResponse() {
-        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisKeyword.LLEN, "test");
 
         final Channel channel = new EmbeddedChannel();
         final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
@@ -39,7 +39,7 @@ class RedisRequestResponseHandlerTest {
 
     @Test
     void testHandleRequestErrorResponse() {
-        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisKeyword.LLEN, "test");
 
         final Channel channel = new EmbeddedChannel();
         final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
@@ -57,7 +57,7 @@ class RedisRequestResponseHandlerTest {
 
     @Test
     void testHandleRequestWriteFailure() {
-        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "test");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisKeyword.LLEN, "test");
 
         final Channel channel = new EmbeddedChannel();
         final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);

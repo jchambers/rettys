@@ -39,7 +39,9 @@ public class RedisClient {
     }
 
     public CompletableFuture<Long> llen(final String key) {
-        final RedisCommand<Long> llenCommand = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, key);
+        final RedisCommand<Long> llenCommand = new RedisCommand<>(RedisResponseConverters.integerConverter(),
+                RedisKeyword.LLEN,
+                key);
 
         channel.writeAndFlush(llenCommand);
 

@@ -9,10 +9,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class RedisCommandEncoderTest {
@@ -26,7 +26,7 @@ class RedisCommandEncoderTest {
 
     @Test
     void encode() {
-        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisCommand.CommandType.LLEN, "mylist");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisKeyword.LLEN, "mylist");
         final ByteBuf expectedOutput =
                 Unpooled.wrappedBuffer("*2\r\n$4\r\nLLEN\r\n$6\r\nmylist\r\n".getBytes(StandardCharsets.US_ASCII));
 
@@ -50,6 +50,7 @@ class RedisCommandEncoderTest {
 
     static Stream<Arguments> redisValueProvider() {
         return Stream.of(
+                arguments(RedisKeyword.LLEN, new byte[] { 'L', 'L', 'E', 'N' }),
                 arguments(new byte[] { 1, 2, 3 }, new byte[] { 1, 2, 3 }),
                 arguments("Test!", new byte[] { 'T', 'e', 's', 't', '!' }),
                 arguments(12, new byte[] { '1', '2' }),
