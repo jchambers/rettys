@@ -39,37 +39,30 @@ public class RedisClient {
         channel = connectFuture.channel();
     }
 
+    public <T> CompletableFuture<T> executeCommand(final RedisCommand<T> command) {
+        channel.writeAndFlush(command);
+        return command.getFuture();
+    }
+
     public CompletableFuture<Long> llen(final String key) {
-        final RedisCommand<Long> llenCommand = new RedisCommand<>(
+        return executeCommand(new RedisCommand<>(
                 RedisResponseConverters.integerConverter(),
                 RedisKeyword.LLEN,
-                key);
-
-        channel.writeAndFlush(llenCommand);
-
-        return llenCommand.getFuture();
+                key));
     }
 
     public CompletableFuture<Long> memoryUsage(final byte[] key) {
-        final RedisCommand<Long> memoryUsageCommand = new RedisCommand<>(
+        return executeCommand(new RedisCommand<>(
                 RedisResponseConverters.integerConverter(),
                 RedisKeyword.MEMORY,
                 RedisKeyword.USAGE,
-                key);
-
-        channel.writeAndFlush(memoryUsageCommand);
-
-        return memoryUsageCommand.getFuture();
+                key));
     }
 
     public CompletableFuture<ScanResponse> scan(final long cursor) {
-        final RedisCommand<ScanResponse> scanCommand = new RedisCommand<>(
+        return executeCommand(new RedisCommand<>(
                 RedisResponseConverters.scanResponseConverter(),
                 RedisKeyword.SCAN,
-                Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII));
-
-        channel.writeAndFlush(scanCommand);
-
-        return scanCommand.getFuture();
+                Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII)));
     }
 }

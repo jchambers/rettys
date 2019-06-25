@@ -23,7 +23,7 @@ class RedisCommand<T> {
      * @param responseConverter the converter to be used to interpret the response from the Redis server
      * @param components TODO
      */
-    RedisCommand(final RedisResponseConverter<T> responseConverter, final Object... components) {
+    public RedisCommand(final RedisResponseConverter<T> responseConverter, final Object... components) {
         this.components = components;
 
         this.future = new CompletableFuture<>();
