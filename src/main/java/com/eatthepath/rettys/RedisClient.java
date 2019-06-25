@@ -9,6 +9,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class RedisClient {
 
@@ -45,24 +47,51 @@ public class RedisClient {
     }
 
     public CompletableFuture<Long> llen(final String key) {
-        return executeCommand(new RedisCommand<>(
-                RedisResponseConverters.integerConverter(),
+        return executeCommand(new RedisCommand<>(RedisResponseConverters.integerConverter(),
                 RedisKeyword.LLEN,
                 key));
     }
 
     public CompletableFuture<Long> memoryUsage(final byte[] key) {
-        return executeCommand(new RedisCommand<>(
-                RedisResponseConverters.integerConverter(),
+        return executeCommand(new RedisCommand<>(RedisResponseConverters.integerConverter(),
                 RedisKeyword.MEMORY,
                 RedisKeyword.USAGE,
                 key));
     }
 
-    public CompletableFuture<ScanResponse> scan(final long cursor) {
-        return executeCommand(new RedisCommand<>(
-                RedisResponseConverters.scanResponseConverter(),
-                RedisKeyword.SCAN,
-                Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII)));
+    public Stream<byte[]> scan() {
+        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
+                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
+                        RedisKeyword.SCAN,
+                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII))).join()), false);
+    }
+
+    public Stream<byte[]> scan(final String matchPattern) {
+        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
+                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
+                        RedisKeyword.SCAN,
+                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII),
+                        RedisKeyword.MATCH,
+                        matchPattern)).join()), false);
+    }
+
+    public Stream<byte[]> scan(final long count) {
+        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
+                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
+                        RedisKeyword.SCAN,
+                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII),
+                        RedisKeyword.COUNT,
+                        count)).join()), false);
+    }
+
+    public Stream<byte[]> scan(final String matchPattern, final long count) {
+        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
+                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
+                        RedisKeyword.SCAN,
+                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII),
+                        RedisKeyword.MATCH,
+                        matchPattern,
+                        RedisKeyword.COUNT,
+                        count)).join()), false);
     }
 }
