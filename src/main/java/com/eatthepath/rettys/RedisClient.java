@@ -47,38 +47,22 @@ public class RedisClient implements RedisCommandExecutor {
     }
 
     public Stream<byte[]> scan() {
-        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
-                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
-                        RedisKeyword.SCAN,
-                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII))).join()), false);
+        return StreamSupport.stream(new ScanSpliterator((cursor) ->
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor)).join()), false);
     }
 
     public Stream<byte[]> scan(final String matchPattern) {
-        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
-                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
-                        RedisKeyword.SCAN,
-                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII),
-                        RedisKeyword.MATCH,
-                        matchPattern)).join()), false);
+        return StreamSupport.stream(new ScanSpliterator((cursor) ->
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern)).join()), false);
     }
 
     public Stream<byte[]> scan(final long count) {
-        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
-                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
-                        RedisKeyword.SCAN,
-                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII),
-                        RedisKeyword.COUNT,
-                        count)).join()), false);
+        return StreamSupport.stream(new ScanSpliterator((cursor) ->
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, count)).join()), false);
     }
 
     public Stream<byte[]> scan(final String matchPattern, final long count) {
-        return StreamSupport.stream(new ScanSpliterator((cursor) -> executeCommand(
-                new RedisCommand<>(RedisResponseConverters.scanResponseConverter(),
-                        RedisKeyword.SCAN,
-                        Long.toUnsignedString(cursor).getBytes(StandardCharsets.US_ASCII),
-                        RedisKeyword.MATCH,
-                        matchPattern,
-                        RedisKeyword.COUNT,
-                        count)).join()), false);
+        return StreamSupport.stream(new ScanSpliterator((cursor) ->
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count)).join()), false);
     }
 }

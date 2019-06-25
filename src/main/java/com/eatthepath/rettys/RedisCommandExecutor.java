@@ -9,6 +9,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface RedisCommandExecutor {
 
+    byte[] INITIAL_SCAN_CURSOR = new byte[] { '0' };
+
     <T> CompletableFuture<T> executeCommand(final RedisCommand<T> command);
 
     default CompletableFuture<Long> llen(final String key) {
@@ -17,5 +19,21 @@ public interface RedisCommandExecutor {
 
     default CompletableFuture<Long> memoryUsage(final byte[] key) {
         return executeCommand(RedisCommandFactory.buildMemoryUsageCommand(key));
+    }
+
+    default CompletableFuture<ScanResponse> scan(byte[] cursor) {
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor));
+    }
+
+    default CompletableFuture<ScanResponse> scan(byte[] cursor, String matchPattern) {
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern));
+    }
+
+    default CompletableFuture<ScanResponse> scan(byte[] cursor, long count) {
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, count));
+    }
+
+    default CompletableFuture<ScanResponse> scan(byte[] cursor, String matchPattern, long count) {
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count));
     }
 }

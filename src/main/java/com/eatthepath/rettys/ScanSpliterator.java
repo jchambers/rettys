@@ -1,9 +1,6 @@
 package com.eatthepath.rettys;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Objects;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -15,7 +12,7 @@ import java.util.function.Function;
  */
 class ScanSpliterator implements Spliterator<byte[]> {
 
-    private final Function<Long, ScanResponse> scanResponseFunction;
+    private final Function<byte[], ScanResponse> scanResponseFunction;
 
     private ScanResponse scanResponse;
     private Deque<byte[]> keys = new ArrayDeque<>();
@@ -27,14 +24,15 @@ class ScanSpliterator implements Spliterator<byte[]> {
      * @param scanResponseFunction a function that takes a Redis cursor position as an argument and retrieves additional
      * scan results from the Redis server
      */
-    ScanSpliterator(final Function<Long, ScanResponse> scanResponseFunction) {
+    ScanSpliterator(final Function<byte[], ScanResponse> scanResponseFunction) {
         this.scanResponseFunction = Objects.requireNonNull(scanResponseFunction, "Scan response function must not be null.");
     }
 
     @Override
     public boolean tryAdvance(final Consumer<? super byte[]> action) {
-        while (keys.isEmpty() && (scanResponse == null || scanResponse.getCursor() != 0)) {
-            scanResponse = scanResponseFunction.apply(scanResponse == null ? 0 : scanResponse.getCursor());
+
+        while (keys.isEmpty() && (scanResponse == null || !Arrays.equals(scanResponse.getCursor(), RedisCommandExecutor.INITIAL_SCAN_CURSOR))) {
+            scanResponse = scanResponseFunction.apply(scanResponse == null ? RedisCommandExecutor.INITIAL_SCAN_CURSOR : scanResponse.getCursor());
 
             for (final byte[] key : scanResponse.getKeys()) {
                 keys.addLast(key);

@@ -1,15 +1,15 @@
 package com.eatthepath.rettys;
 
 public class ScanResponse {
-    private final long cursor;
+    private final byte[] cursor;
     private final byte[][] keys;
 
-    public ScanResponse(final long cursor, final byte[][] keys) {
+    public ScanResponse(final byte[] cursor, final byte[][] keys) {
         this.cursor = cursor;
         this.keys = keys;
     }
 
-    public long getCursor() {
+    public byte[] getCursor() {
         return cursor;
     }
 

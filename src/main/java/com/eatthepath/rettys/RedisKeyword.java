@@ -7,9 +7,11 @@ import java.nio.charset.StandardCharsets;
  */
 enum RedisKeyword {
     COUNT("COUNT"),
+    EXEC("EXEC"),
     LLEN("LLEN"),
     MATCH("MATCH"),
     MEMORY("MEMORY"),
+    MULTI("MULTI"),
     SCAN("SCAN"),
     USAGE("USAGE");
 

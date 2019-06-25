@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,13 +24,16 @@ class ScanSpliteratorTest {
                 new byte[][] { "Second key".getBytes() }
         );
 
-        final Function<Long, ScanResponse> scanResponseFunction = (cursor) -> {
+        final Function<byte[], ScanResponse> scanResponseFunction = (cursor) -> {
             final ScanResponse scanResponse;
 
-            if (cursor < keys.size()) {
-                scanResponse = new ScanResponse(cursor + 1, keys.get(cursor.intValue()));
+            final long cursorAsLong = Long.parseUnsignedLong(new String(cursor, StandardCharsets.US_ASCII), 10);
+
+            if (cursorAsLong < keys.size()) {
+                final byte[] nextCursor = String.valueOf(cursorAsLong + 1).getBytes(StandardCharsets.US_ASCII);
+                scanResponse = new ScanResponse(nextCursor, keys.get((int) cursorAsLong));
             } else {
-                scanResponse = new ScanResponse(0, new byte[0][]);
+                scanResponse = new ScanResponse(RedisCommandExecutor.INITIAL_SCAN_CURSOR, new byte[0][]);
             }
 
             return scanResponse;

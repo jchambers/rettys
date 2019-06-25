@@ -1,7 +1,5 @@
 package com.eatthepath.rettys;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  * This class provides static methods for getting singleton instances of common Redis response converters.
  */
@@ -30,7 +28,7 @@ class RedisResponseConverters {
             throw new IllegalArgumentException("Could not convert array element to cursor value: " + responseArray[0].getClass());
         }
 
-        final long cursor = Long.parseUnsignedLong(new String((byte[]) responseArray[0], StandardCharsets.US_ASCII), 10);
+        final byte[] cursor = (byte[]) responseArray[0];
 
         if (!(responseArray[1] instanceof Object[])) {
             throw new IllegalArgumentException("Could not convert array element to list of keys: " + responseArray[1].getClass());
