@@ -63,6 +63,8 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
         }
 
         pendingCommands.clear();
+
+        ctx.fireChannelActive();
     }
 
     @Override
