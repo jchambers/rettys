@@ -46,7 +46,7 @@ class RedisTransaction implements RedisCommandExecutor {
                     final RedisCommand command = commands.get(i);
 
                     //noinspection unchecked
-                    command.getFuture().complete(command.getResponseConverter().convertRedisResponse(responseArray[i]));
+                    command.getFuture().complete(command.getResponseConverter().apply(responseArray[i]));
                 }
             }
         });

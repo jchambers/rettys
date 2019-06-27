@@ -38,7 +38,7 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
                 // we'll rely on the transaction to dispatch those responses to its constituent commands.
 
                 //noinspection unchecked
-                pendingCommand.getFuture().complete(pendingCommand.getResponseConverter().convertRedisResponse(msg));
+                pendingCommand.getFuture().complete(pendingCommand.getResponseConverter().apply(msg));
             }
         } else {
             log.error("Received a Redis message, but have no pending commands.");

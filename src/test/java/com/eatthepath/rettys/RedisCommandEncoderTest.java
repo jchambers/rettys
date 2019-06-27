@@ -26,7 +26,7 @@ class RedisCommandEncoderTest {
 
     @Test
     void encode() {
-        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.integerConverter(), RedisKeyword.LLEN, "mylist");
+        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "mylist");
         final ByteBuf expectedOutput =
                 Unpooled.wrappedBuffer("*2\r\n$4\r\nLLEN\r\n$6\r\nmylist\r\n".getBytes(StandardCharsets.US_ASCII));
 
