@@ -5,12 +5,22 @@ package com.eatthepath.rettys;
  */
 class RedisResponseConverters {
 
+    private static final RedisResponseConverter<Void> VOID_CONVERTER = redisResponse -> null;
+
     private static final RedisResponseConverter<Long> INTEGER_CONVERTER = redisResponse -> {
         if (!(redisResponse instanceof Number)) {
             throw new IllegalArgumentException("Could not convert Redis response to long: " + redisResponse.getClass());
         }
 
         return ((Number) redisResponse).longValue();
+    };
+
+    private static final RedisResponseConverter<Object[]> OBJECT_ARRAY_CONVERTER = redisResponse -> {
+        if (!(redisResponse instanceof Object[])) {
+            throw new IllegalArgumentException("Could not convert Redis response to object array: " + redisResponse.getClass());
+        }
+
+        return (Object[]) redisResponse;
     };
 
     private static final RedisResponseConverter<ScanResponse> SCAN_RESPONSE_CONVERTER = redisResponse -> {
@@ -49,12 +59,31 @@ class RedisResponseConverters {
     };
 
     /**
+     * Returns a response converter that discards Redis responses and always returns {@code null}. This is intended for
+     * commands where Redis unconditionally returns an "OK" string as a response.
+     *
+     * @return a response converter that always returns {@code null}
+     */
+    static RedisResponseConverter<Void> voidConverter() {
+        return VOID_CONVERTER;
+    }
+
+    /**
      * Returns a response converter that interprets Redis responses as {@link Long} values.
      *
      * @return a response converter that interprets Redis responses as Long values
      */
     static RedisResponseConverter<Long> integerConverter() {
         return INTEGER_CONVERTER;
+    }
+
+    /**
+     * Returns a response converter that interprets Redis responses as arrays of objects.
+     *
+     * @return a response converter that interprets Redis responses as arrays of objects
+     */
+    static RedisResponseConverter<Object[]> objectArrayConverter() {
+        return OBJECT_ARRAY_CONVERTER;
     }
 
     static RedisResponseConverter<ScanResponse> scanResponseConverter() {

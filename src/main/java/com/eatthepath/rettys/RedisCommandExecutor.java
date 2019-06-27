@@ -21,6 +21,10 @@ public interface RedisCommandExecutor {
         return executeCommand(RedisCommandFactory.buildMemoryUsageCommand(key));
     }
 
+    default CompletableFuture<Void> multi() {
+        return executeCommand(RedisCommandFactory.buildMultiCommand());
+    }
+
     default CompletableFuture<ScanResponse> scan(byte[] cursor) {
         return executeCommand(RedisCommandFactory.buildScanCommand(cursor));
     }

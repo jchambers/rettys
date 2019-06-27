@@ -7,8 +7,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -45,6 +45,20 @@ public class RedisClient implements RedisCommandExecutor {
         channel.writeAndFlush(command);
         return command.getFuture();
     }
+
+    /**
+     * Executes the given commands within a Redis transaction. The given commands <em>must</em> be called via the
+     * provided {@link RedisCommandExecutor}; commands called directly via a {@code RedisClient} will be executed
+     * outside the scope of the transaction.
+     *
+     * @param commands the actions to be performed within the transaction
+     */
+    public void doInTransaction(final Consumer<RedisCommandExecutor> commands) {
+        final RedisTransaction transaction = new RedisTransaction();
+
+        commands.accept(transaction);
+        channel.writeAndFlush(transaction);
+    };
 
     public Stream<byte[]> scan() {
         return StreamSupport.stream(new ScanSpliterator((cursor) ->

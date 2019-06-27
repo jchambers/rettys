@@ -18,6 +18,8 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
 
     private final Deque<RedisCommand> pendingCommands = new ArrayDeque<>();
 
+    private static final String QUEUED_RESPONSE = "QUEUED";
+
     private static final IOException CHANNEL_CLOSED_EXCEPTION = new IOException("Channel closed before the Redis server could respond.");
 
     private static final Logger log = LoggerFactory.getLogger(RedisRequestResponseHandler.class);
@@ -29,7 +31,12 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
         if (pendingCommand != null) {
             if (msg instanceof RedisException) {
                 pendingCommand.getFuture().completeExceptionally((RedisException) msg);
-            } else {
+            } else if (!QUEUED_RESPONSE.equals(msg)) {
+                // We DO want to continue to move things through the queue, but do NOT want to actually complete the
+                // futures for commands that are part of a transaction. Commands queued as part of a transaction will
+                // pile their responses into an array returned for the EXEC command at the end of the transaction, and
+                // we'll rely on the transaction to dispatch those responses to its constituent commands.
+
                 //noinspection unchecked
                 pendingCommand.getFuture().complete(pendingCommand.getResponseConverter().convertRedisResponse(msg));
             }
@@ -40,7 +47,13 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
 
     @Override
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise writePromise) {
-        if (msg instanceof RedisCommand) {
+        if (msg instanceof RedisTransaction) {
+            final RedisTransaction transaction = (RedisTransaction) msg;
+
+            write(ctx, transaction.getMultiCommand(), ctx.newPromise());
+            transaction.getCommands().forEach((command) -> write(ctx, command, ctx.newPromise()));
+            write(ctx, transaction.getExecCommand(), ctx.newPromise());
+        } else if (msg instanceof RedisCommand) {
             final RedisCommand command = (RedisCommand) msg;
 
             pendingCommands.addLast(command);

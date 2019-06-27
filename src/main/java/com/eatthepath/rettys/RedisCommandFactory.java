@@ -2,6 +2,11 @@ package com.eatthepath.rettys;
 
 class RedisCommandFactory {
 
+    static RedisCommand<Object[]> buildExecCommand() {
+        return new RedisCommand<>(RedisResponseConverters.objectArrayConverter(),
+                RedisKeyword.EXEC);
+    }
+
     static RedisCommand<Long> buildLlenCommand(final String key) {
         return new RedisCommand<>(RedisResponseConverters.integerConverter(),
                 RedisKeyword.LLEN,
@@ -13,6 +18,11 @@ class RedisCommandFactory {
                 RedisKeyword.MEMORY,
                 RedisKeyword.USAGE,
                 key);
+    }
+
+    static RedisCommand<Void> buildMultiCommand() {
+        return new RedisCommand<>(RedisResponseConverters.voidConverter(),
+                RedisKeyword.MULTI);
     }
 
     static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor) {
