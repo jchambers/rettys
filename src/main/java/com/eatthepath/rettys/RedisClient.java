@@ -31,6 +31,8 @@ public class RedisClient implements RedisCommandExecutor {
                 final ChannelPipeline pipeline = channel.pipeline();
 
                 pipeline.addLast(new RedisFrameDecoder());
+                // TODO Make this configurable
+                pipeline.addLast(new RedisFrameLoggingHandler());
                 pipeline.addLast(new RedisValueDecoder());
                 pipeline.addLast(new RedisCommandEncoder());
                 pipeline.addLast(new RedisRequestResponseHandler());
