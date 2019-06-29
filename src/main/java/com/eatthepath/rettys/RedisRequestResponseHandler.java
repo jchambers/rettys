@@ -1,20 +1,20 @@
 package com.eatthepath.rettys;
 
-import io.netty.channel.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
  * A Redis request/response handler tracks pending commands and matches them to responses from the Redis server.
  */
-class RedisRequestResponseHandler extends ChannelHandlerAdapter implements ChannelInboundHandler, ChannelOutboundHandler {
+class RedisRequestResponseHandler extends ChannelInboundOutboundHandlerAdapter {
 
     private final Deque<RedisCommand> pendingCommands = new ArrayDeque<>();
 
@@ -78,70 +78,5 @@ class RedisRequestResponseHandler extends ChannelHandlerAdapter implements Chann
         pendingCommands.clear();
 
         ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelRegistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelRegistered();
-    }
-
-    @Override
-    public void channelUnregistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelUnregistered();
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) {
-        ctx.fireChannelReadComplete();
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx, final Object event) {
-        ctx.fireUserEventTriggered(event);
-    }
-
-    @Override
-    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-        ctx.fireChannelWritabilityChanged();
-    }
-
-    @Override
-    public void bind(final ChannelHandlerContext ctx, final SocketAddress socketAddress, final ChannelPromise channelPromise) {
-        ctx.bind(socketAddress, channelPromise);
-    }
-
-    @Override
-    public void connect(final ChannelHandlerContext ctx, final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise channelPromise) {
-        ctx.connect(remoteAddress, localAddress, channelPromise);
-    }
-
-    @Override
-    public void disconnect(final ChannelHandlerContext ctx, final ChannelPromise channelPromise) {
-        ctx.disconnect(channelPromise);
-    }
-
-    @Override
-    public void close(final ChannelHandlerContext ctx, final ChannelPromise channelPromise) {
-        ctx.close(channelPromise);
-    }
-
-    @Override
-    public void deregister(final ChannelHandlerContext ctx, final ChannelPromise channelPromise) {
-        ctx.deregister(channelPromise);
-    }
-
-    @Override
-    public void read(final ChannelHandlerContext ctx) {
-        ctx.read();
-    }
-
-    @Override
-    public void flush(final ChannelHandlerContext ctx) {
-        ctx.flush();
     }
 }
