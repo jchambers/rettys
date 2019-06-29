@@ -58,4 +58,40 @@ class RedisCommandFactory {
                 RedisKeyword.COUNT,
                 count);
     }
+
+    static RedisCommand<Void> buildSubscribeCommand(final String... channels) {
+        final Object[] components = new Object[channels.length + 1];
+
+        components[0] = RedisKeyword.SUBSCRIBE;
+        System.arraycopy(channels, 0, components, 1, channels.length);
+
+        return new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER, components);
+    }
+
+    static RedisCommand<Void> buildUnsubscribeCommand(final String... channels) {
+        final Object[] components = new Object[channels.length + 1];
+
+        components[0] = RedisKeyword.UNSUBSCRIBE;
+        System.arraycopy(channels, 0, components, 1, channels.length);
+
+        return new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER, components);
+    }
+
+    static RedisCommand<Void> buildPsubscribeCommand(final String... patterns) {
+        final Object[] components = new Object[patterns.length + 1];
+
+        components[0] = RedisKeyword.PSUBSCRIBE;
+        System.arraycopy(patterns, 0, components, 1, patterns.length);
+
+        return new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER, components);
+    }
+
+    static RedisCommand<Void> buildPunsubscribeCommand(final String... patterns) {
+        final Object[] components = new Object[patterns.length + 1];
+
+        components[0] = RedisKeyword.PUNSUBSCRIBE;
+        System.arraycopy(patterns, 0, components, 1, patterns.length);
+
+        return new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER, components);
+    }
 }

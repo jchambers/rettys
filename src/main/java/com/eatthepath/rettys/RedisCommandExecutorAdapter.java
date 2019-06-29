@@ -43,4 +43,24 @@ abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
     public CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count) {
         return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count, getCharset()));
     }
+
+    @Override
+    public CompletableFuture<Void> subscribe(final String... channels) {
+        return executeCommand(RedisCommandFactory.buildSubscribeCommand(channels));
+    }
+
+    @Override
+    public CompletableFuture<Void> unsubscribe(final String... channels) {
+        return executeCommand(RedisCommandFactory.buildUnsubscribeCommand(channels));
+    }
+
+    @Override
+    public CompletableFuture<Void> psubscribe(final String... patterns) {
+        return executeCommand(RedisCommandFactory.buildPsubscribeCommand(patterns));
+    }
+
+    @Override
+    public CompletableFuture<Void> punsubscribe(final String... patterns) {
+        return executeCommand(RedisCommandFactory.buildPunsubscribeCommand(patterns));
+    }
 }

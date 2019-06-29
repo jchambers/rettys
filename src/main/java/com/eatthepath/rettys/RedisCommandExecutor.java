@@ -22,4 +22,12 @@ public interface RedisCommandExecutor {
     CompletableFuture<ScanResponse> scan(final Object cursor, final long count);
 
     CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count);
+
+    CompletableFuture<Void> subscribe(String... channels);
+
+    CompletableFuture<Void> unsubscribe(String... channels);
+
+    CompletableFuture<Void> psubscribe(String... patterns);
+
+    CompletableFuture<Void> punsubscribe(String... patterns);
 }

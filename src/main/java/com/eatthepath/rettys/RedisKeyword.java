@@ -12,7 +12,11 @@ enum RedisKeyword {
     MATCH("MATCH"),
     MEMORY("MEMORY"),
     MULTI("MULTI"),
+    PSUBSCRIBE("PSUBSCRIBE"),
+    PUNSUBSCRIBE("PUNSUBSCRIBE"),
     SCAN("SCAN"),
+    SUBSCRIBE("SUBSCRIBE"),
+    UNSUBSCRIBE("UNSUBSCRIBE"),
     USAGE("USAGE");
 
     private final byte[] bytes;
