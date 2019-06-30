@@ -9,11 +9,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface RedisCommandExecutor {
 
-    byte[] INITIAL_SCAN_CURSOR = new byte[] { '0' };
+    <T> CompletableFuture<T> executeCommand(RedisCommand<T> command);
 
-    <T> CompletableFuture<T> executeCommand(final RedisCommand<T> command);
-
-    default CompletableFuture<Long> llen(final String key) {
+    default CompletableFuture<Long> llen(final Object key) {
         return executeCommand(RedisCommandFactory.buildLlenCommand(key));
     };
 
@@ -25,19 +23,19 @@ public interface RedisCommandExecutor {
         return executeCommand(RedisCommandFactory.buildMultiCommand());
     }
 
-    default CompletableFuture<ScanResponse> scan(byte[] cursor) {
+    default CompletableFuture<ScanResponse> scan(final Object cursor) {
         return executeCommand(RedisCommandFactory.buildScanCommand(cursor));
     }
 
-    default CompletableFuture<ScanResponse> scan(byte[] cursor, String matchPattern) {
+    default CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern) {
         return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern));
     }
 
-    default CompletableFuture<ScanResponse> scan(byte[] cursor, long count) {
+    default CompletableFuture<ScanResponse> scan(final Object cursor, final long count) {
         return executeCommand(RedisCommandFactory.buildScanCommand(cursor, count));
     }
 
-    default CompletableFuture<ScanResponse> scan(byte[] cursor, String matchPattern, long count) {
+    default CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count) {
         return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count));
     }
 }
