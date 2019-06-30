@@ -44,7 +44,7 @@ public class RedisClient extends RedisCommandExecutorAdapter {
                 pipeline.addLast(new RedisFrameLoggingHandler(charset));
                 pipeline.addLast(new RedisValueDecoder());
                 pipeline.addLast(new RedisCommandEncoder(charset));
-                pipeline.addLast(new RedisRequestResponseHandler());
+                pipeline.addLast(new RedisRequestResponseHandler(charset));
             }
         });
 

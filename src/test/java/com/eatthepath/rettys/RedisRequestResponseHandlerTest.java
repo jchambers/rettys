@@ -5,12 +5,18 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class RedisRequestResponseHandlerTest {
 
@@ -18,7 +24,7 @@ class RedisRequestResponseHandlerTest {
 
     @BeforeEach
     void beforeEach() {
-        requestResponseHandler = new RedisRequestResponseHandler();
+        requestResponseHandler = new RedisRequestResponseHandler(StandardCharsets.UTF_8);
     }
 
     @Test
@@ -112,5 +118,40 @@ class RedisRequestResponseHandlerTest {
 
         assertEquals(expectedMemoryUsageResponse, assertTimeoutPreemptively(Duration.ofSeconds(1), memoryUsageCommand.getFuture()::join));
         assertFalse(llenCommand.getFuture().isDone());
+    }
+
+    @ParameterizedTest
+    @MethodSource("subscriptionChangeResponseSource")
+    void isSubscriptionChangeResponse(final Object response, final boolean expectIsSubscriptionChangeResponse) {
+        assertEquals(expectIsSubscriptionChangeResponse, RedisRequestResponseHandler.isSubscriptionChangeResponse(response));
+    }
+
+    static Stream<Arguments> subscriptionChangeResponseSource() {
+        return Stream.of(
+                arguments("Test!", false),
+                arguments(12, false),
+                arguments(new Object[] { "subscribe".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), 1, 17 }, false),
+                arguments(new Object[] { "subscribe".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), "1".getBytes(StandardCharsets.US_ASCII) }, false),
+                arguments(new Object[] { "not-a-subscription-message".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), 1 }, false),
+                arguments(new Object[] { "subscribe".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), 1 }, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("publishedMessageResponseSource")
+    void isPublishedMessageResponse(final Object response, final boolean expectIsPublishedMessageResponse) {
+        assertEquals(expectIsPublishedMessageResponse, RedisRequestResponseHandler.isPublishedMessageResponse(response));
+    }
+
+    static Stream<Arguments> publishedMessageResponseSource() {
+        return Stream.of(
+                arguments("Test!", false),
+                arguments(12, false),
+                arguments(new Object[] { "message".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), new byte[0], 17 }, false),
+                arguments(new Object[] { "message".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), 1 }, false),
+                arguments(new Object[] { "not-a-message".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), new byte[0] }, false),
+                arguments(new Object[] { "message".getBytes(StandardCharsets.US_ASCII), "channel".getBytes(StandardCharsets.US_ASCII), new byte[0] }, true),
+                arguments(new Object[] { "pmessage".getBytes(StandardCharsets.US_ASCII), "pattern.*".getBytes(StandardCharsets.US_ASCII), new byte[0] }, true)
+        );
     }
 }

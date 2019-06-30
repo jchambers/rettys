@@ -2,6 +2,7 @@ package com.eatthepath.rettys;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 
 abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
 
@@ -45,22 +46,22 @@ abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
     }
 
     @Override
-    public CompletableFuture<Void> subscribe(final String... channels) {
+    public CompletableFuture<Long> subscribe(final BiConsumer<String, Object> messageHandler, final String... channels) {
         return executeCommand(RedisCommandFactory.buildSubscribeCommand(channels));
     }
 
     @Override
-    public CompletableFuture<Void> unsubscribe(final String... channels) {
+    public CompletableFuture<Long> unsubscribe(final BiConsumer<String, Object> messageHandler, final String... channels) {
         return executeCommand(RedisCommandFactory.buildUnsubscribeCommand(channels));
     }
 
     @Override
-    public CompletableFuture<Void> psubscribe(final String... patterns) {
+    public CompletableFuture<Long> psubscribe(final BiConsumer<String, Object> messageHandler, final String... patterns) {
         return executeCommand(RedisCommandFactory.buildPsubscribeCommand(patterns));
     }
 
     @Override
-    public CompletableFuture<Void> punsubscribe(final String... patterns) {
+    public CompletableFuture<Long> punsubscribe(final BiConsumer<String, Object> messageHandler, final String... patterns) {
         return executeCommand(RedisCommandFactory.buildPunsubscribeCommand(patterns));
     }
 }

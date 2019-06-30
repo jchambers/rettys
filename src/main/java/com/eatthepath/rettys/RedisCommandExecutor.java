@@ -1,6 +1,7 @@
 package com.eatthepath.rettys;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 
 /**
  * A Redis command executor is responsible for executing individual Redis commands. While some commands may only make
@@ -9,25 +10,25 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface RedisCommandExecutor {
 
-    CompletableFuture<Long> llen(final Object key);
+    CompletableFuture<Long> llen(Object key);
 
-    CompletableFuture<Long> memoryUsage(final byte[] key);
+    CompletableFuture<Long> memoryUsage(byte[] key);
 
     CompletableFuture<Void> multi();
 
-    CompletableFuture<ScanResponse> scan(final Object cursor);
+    CompletableFuture<ScanResponse> scan(Object cursor);
 
-    CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern);
+    CompletableFuture<ScanResponse> scan(Object cursor, String matchPattern);
 
-    CompletableFuture<ScanResponse> scan(final Object cursor, final long count);
+    CompletableFuture<ScanResponse> scan(Object cursor, long count);
 
-    CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count);
+    CompletableFuture<ScanResponse> scan(Object cursor, String matchPattern, long count);
 
-    CompletableFuture<Void> subscribe(String... channels);
+    CompletableFuture<Long> subscribe(BiConsumer<String, Object> messageHandler, String... channels);
 
-    CompletableFuture<Void> unsubscribe(String... channels);
+    CompletableFuture<Long> unsubscribe(BiConsumer<String, Object> messageHandler, String... channels);
 
-    CompletableFuture<Void> psubscribe(String... patterns);
+    CompletableFuture<Long> psubscribe(BiConsumer<String, Object> messageHandler, String... patterns);
 
-    CompletableFuture<Void> punsubscribe(String... patterns);
+    CompletableFuture<Long> punsubscribe(BiConsumer<String, Object> messageHandler, String... patterns);
 }
