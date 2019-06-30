@@ -26,13 +26,13 @@ class RedisCommandFactory {
     }
 
     static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor) {
-        return new RedisCommand<>(RedisResponseConverters.SCAN_RESPONSE_CONVERTER,
+        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor);
     }
 
     static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor, final String matchPattern) {
-        return new RedisCommand<>(RedisResponseConverters.SCAN_RESPONSE_CONVERTER,
+        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor,
                 RedisKeyword.MATCH,
@@ -40,7 +40,7 @@ class RedisCommandFactory {
     }
 
     static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor, final long count) {
-        return new RedisCommand<>(RedisResponseConverters.SCAN_RESPONSE_CONVERTER,
+        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor,
                 RedisKeyword.COUNT,
@@ -48,7 +48,7 @@ class RedisCommandFactory {
     }
 
     static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor, final String matchPattern, final long count) {
-        return new RedisCommand<>(RedisResponseConverters.SCAN_RESPONSE_CONVERTER,
+        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor,
                 RedisKeyword.MATCH,
