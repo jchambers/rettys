@@ -7,6 +7,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -14,12 +15,20 @@ import java.util.stream.StreamSupport;
 
 public class RedisClient implements RedisCommandExecutor {
 
+    private final Charset charset;
+
     private final Channel channel;
 
     // TODO Add mechanisms to configure and gracefully shut down this event loop group
     private final EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
 
     public RedisClient(final InetSocketAddress inetSocketAddress) throws InterruptedException {
+        this(inetSocketAddress, Charset.defaultCharset());
+    }
+
+    public RedisClient(final InetSocketAddress inetSocketAddress, final Charset charset) throws InterruptedException {
+        this.charset = charset;
+
         final Bootstrap bootstrap = new Bootstrap();
         bootstrap.channel(NioSocketChannel.class);
         bootstrap.group(eventLoopGroup);
@@ -32,9 +41,9 @@ public class RedisClient implements RedisCommandExecutor {
 
                 pipeline.addLast(new RedisFrameDecoder());
                 // TODO Make this configurable
-                pipeline.addLast(new RedisFrameLoggingHandler());
+                pipeline.addLast(new RedisFrameLoggingHandler(charset));
                 pipeline.addLast(new RedisValueDecoder());
-                pipeline.addLast(new RedisCommandEncoder());
+                pipeline.addLast(new RedisCommandEncoder(charset));
                 pipeline.addLast(new RedisRequestResponseHandler());
             }
         });

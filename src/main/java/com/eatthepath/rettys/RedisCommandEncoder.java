@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -11,12 +12,18 @@ import java.nio.charset.StandardCharsets;
  */
 class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
 
+    private final Charset charset;
+
     private static final byte ARRAY_PREFIX = '*';
     private static final byte BULK_STRING_PREFIX = '$';
 
     private static final byte[] CRLF = new byte[] { '\r', '\n' };
 
     private static final byte[] NULL_BULK_STRING = new byte[] { BULK_STRING_PREFIX, '-', '1', '\r', '\n' };
+
+    RedisCommandEncoder(final Charset charset) {
+        this.charset = charset;
+    }
 
     @Override
     protected void encode(final ChannelHandlerContext context, final RedisCommand command, final ByteBuf out) {
@@ -41,7 +48,7 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
         }
     }
 
-    static byte[] getBulkStringBytes(final Object redisValue) {
+    byte[] getBulkStringBytes(final Object redisValue) {
         assert redisValue != null;
 
         final byte[] bulkStringBytes;
@@ -51,8 +58,7 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
         } else if (redisValue instanceof byte[]) {
             bulkStringBytes = (byte[]) redisValue;
         } else if (redisValue instanceof String) {
-            // TODO Think carefully about choosing character sets for strings
-            bulkStringBytes = ((String) redisValue).getBytes(StandardCharsets.UTF_8);
+            bulkStringBytes = ((String) redisValue).getBytes(charset);
         } else if (redisValue instanceof Number) {
             bulkStringBytes = redisValue.toString().getBytes(StandardCharsets.US_ASCII);
         } else {
