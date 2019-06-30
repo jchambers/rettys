@@ -33,7 +33,7 @@ class ScanSpliteratorTest {
                 final byte[] nextCursor = String.valueOf(cursorAsLong + 1).getBytes(StandardCharsets.US_ASCII);
                 scanResponse = new ScanResponse(nextCursor, keys.get((int) cursorAsLong));
             } else {
-                scanResponse = new ScanResponse(RedisCommandExecutor.INITIAL_SCAN_CURSOR, new byte[0][]);
+                scanResponse = new ScanResponse(new byte[] { '0' }, new byte[0][]);
             }
 
             return scanResponse;

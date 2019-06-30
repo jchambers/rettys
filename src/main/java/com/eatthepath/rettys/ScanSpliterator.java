@@ -17,6 +17,8 @@ class ScanSpliterator implements Spliterator<byte[]> {
     private ScanResponse scanResponse;
     private Deque<byte[]> keys = new ArrayDeque<>();
 
+    private static final byte[] INITIAL_SCAN_CURSOR_BYTES = new byte[] { '0' };
+
     /**
      * Constructs a new spliterator that uses the given function to request additional scan results from the Redis
      * server.
@@ -31,8 +33,8 @@ class ScanSpliterator implements Spliterator<byte[]> {
     @Override
     public boolean tryAdvance(final Consumer<? super byte[]> action) {
 
-        while (keys.isEmpty() && (scanResponse == null || !Arrays.equals(scanResponse.getCursor(), RedisCommandExecutor.INITIAL_SCAN_CURSOR))) {
-            scanResponse = scanResponseFunction.apply(scanResponse == null ? RedisCommandExecutor.INITIAL_SCAN_CURSOR : scanResponse.getCursor());
+        while (keys.isEmpty() && (scanResponse == null || !Arrays.equals(INITIAL_SCAN_CURSOR_BYTES, scanResponse.getCursor()))) {
+            scanResponse = scanResponseFunction.apply(scanResponse == null ? INITIAL_SCAN_CURSOR_BYTES : scanResponse.getCursor());
 
             for (final byte[] key : scanResponse.getKeys()) {
                 keys.addLast(key);

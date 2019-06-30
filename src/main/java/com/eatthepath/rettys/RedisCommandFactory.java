@@ -7,13 +7,13 @@ class RedisCommandFactory {
                 RedisKeyword.EXEC);
     }
 
-    static RedisCommand<Long> buildLlenCommand(final String key) {
+    static RedisCommand<Long> buildLlenCommand(final Object key) {
         return new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
                 RedisKeyword.LLEN,
                 key);
     }
 
-    static RedisCommand<Long> buildMemoryUsageCommand(final byte[] key) {
+    static RedisCommand<Long> buildMemoryUsageCommand(final Object key) {
         return new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
                 RedisKeyword.MEMORY,
                 RedisKeyword.USAGE,
@@ -25,13 +25,13 @@ class RedisCommandFactory {
                 RedisKeyword.MULTI);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor) {
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor) {
         return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor, final String matchPattern) {
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final String matchPattern) {
         return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor,
@@ -39,7 +39,7 @@ class RedisCommandFactory {
                 matchPattern);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor, final long count) {
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final long count) {
         return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor,
@@ -47,7 +47,7 @@ class RedisCommandFactory {
                 count);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final byte[] cursor, final String matchPattern, final long count) {
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final String matchPattern, final long count) {
         return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
                 RedisKeyword.SCAN,
                 cursor,
