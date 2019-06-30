@@ -21,7 +21,7 @@ class RedisCommandEncoderTest {
 
     @BeforeEach
     void beforeEach() {
-        redisCommandEncoder = new RedisCommandEncoder();
+        redisCommandEncoder = new RedisCommandEncoder(StandardCharsets.UTF_8);
     }
 
     @Test
@@ -45,7 +45,7 @@ class RedisCommandEncoderTest {
     @ParameterizedTest
     @MethodSource("redisValueProvider")
     void getBulkStringBytes(final Object redisValue, final byte[] expectedBulkStringBytes) {
-        assertArrayEquals(expectedBulkStringBytes, RedisCommandEncoder.getBulkStringBytes(redisValue));
+        assertArrayEquals(expectedBulkStringBytes, redisCommandEncoder.getBulkStringBytes(redisValue));
     }
 
     static Stream<Arguments> redisValueProvider() {
