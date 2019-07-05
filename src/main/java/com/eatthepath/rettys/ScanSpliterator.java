@@ -10,12 +10,12 @@ import java.util.function.Function;
  * Redis keys; callers should bear in mind that iterating across an entire key set returned by a scan command may
  * require numerous calls to the Redis server.
  */
-class ScanSpliterator implements Spliterator<byte[]> {
+class ScanSpliterator implements Spliterator<String> {
 
     private final Function<byte[], ScanResponse> scanResponseFunction;
 
     private ScanResponse scanResponse;
-    private Deque<byte[]> keys = new ArrayDeque<>();
+    private Deque<String> keys = new ArrayDeque<>();
 
     private static final byte[] INITIAL_SCAN_CURSOR_BYTES = new byte[] { '0' };
 
@@ -31,12 +31,12 @@ class ScanSpliterator implements Spliterator<byte[]> {
     }
 
     @Override
-    public boolean tryAdvance(final Consumer<? super byte[]> action) {
+    public boolean tryAdvance(final Consumer<? super String> action) {
 
         while (keys.isEmpty() && (scanResponse == null || !Arrays.equals(INITIAL_SCAN_CURSOR_BYTES, scanResponse.getCursor()))) {
             scanResponse = scanResponseFunction.apply(scanResponse == null ? INITIAL_SCAN_CURSOR_BYTES : scanResponse.getCursor());
 
-            for (final byte[] key : scanResponse.getKeys()) {
+            for (final String key : scanResponse.getKeys()) {
                 keys.addLast(key);
             }
         }
@@ -50,7 +50,7 @@ class ScanSpliterator implements Spliterator<byte[]> {
     }
 
     @Override
-    public Spliterator<byte[]> trySplit() {
+    public Spliterator<String> trySplit() {
         return null;
     }
 

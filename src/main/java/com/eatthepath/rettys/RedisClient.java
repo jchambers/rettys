@@ -77,23 +77,23 @@ public class RedisClient extends RedisCommandExecutorAdapter {
         channel.writeAndFlush(transaction);
     };
 
-    public Stream<byte[]> scan() {
+    public Stream<String> scan() {
         return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor)).join()), false);
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, getCharset())).join()), false);
     }
 
-    public Stream<byte[]> scan(final String matchPattern) {
+    public Stream<String> scan(final String matchPattern) {
         return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern)).join()), false);
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, getCharset())).join()), false);
     }
 
-    public Stream<byte[]> scan(final long count) {
+    public Stream<String> scan(final long count) {
         return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, count)).join()), false);
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, count, getCharset())).join()), false);
     }
 
-    public Stream<byte[]> scan(final String matchPattern, final long count) {
+    public Stream<String> scan(final String matchPattern, final long count) {
         return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count)).join()), false);
+                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count, getCharset())).join()), false);
     }
 }

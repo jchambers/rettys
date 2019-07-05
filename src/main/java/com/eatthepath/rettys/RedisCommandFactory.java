@@ -1,5 +1,7 @@
 package com.eatthepath.rettys;
 
+import java.nio.charset.Charset;
+
 class RedisCommandFactory {
 
     static RedisCommand<Object[]> buildExecCommand() {
@@ -25,30 +27,30 @@ class RedisCommandFactory {
                 RedisKeyword.MULTI);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor) {
-        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final Charset charset) {
+        return new RedisCommand<>(ScanResponse.scanResponseConverter(charset),
                 RedisKeyword.SCAN,
                 cursor);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final String matchPattern) {
-        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final String matchPattern, final Charset charset) {
+        return new RedisCommand<>(ScanResponse.scanResponseConverter(charset),
                 RedisKeyword.SCAN,
                 cursor,
                 RedisKeyword.MATCH,
                 matchPattern);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final long count) {
-        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final long count, final Charset charset) {
+        return new RedisCommand<>(ScanResponse.scanResponseConverter(charset),
                 RedisKeyword.SCAN,
                 cursor,
                 RedisKeyword.COUNT,
                 count);
     }
 
-    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final String matchPattern, final long count) {
-        return new RedisCommand<>(ScanResponse.SCAN_RESPONSE_CONVERTER,
+    static RedisCommand<ScanResponse> buildScanCommand(final Object cursor, final String matchPattern, final long count, final Charset charset) {
+        return new RedisCommand<>(ScanResponse.scanResponseConverter(charset),
                 RedisKeyword.SCAN,
                 cursor,
                 RedisKeyword.MATCH,
