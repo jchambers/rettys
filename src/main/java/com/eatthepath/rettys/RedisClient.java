@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class RedisClient implements RedisCommandExecutor {
+public class RedisClient extends RedisCommandExecutorAdapter {
 
     private final Charset charset;
 
@@ -52,6 +52,12 @@ public class RedisClient implements RedisCommandExecutor {
         channel = connectFuture.channel();
     }
 
+    @Override
+    public Charset getCharset() {
+        return charset;
+    }
+
+    @Override
     public <T> CompletableFuture<T> executeCommand(final RedisCommand<T> command) {
         channel.writeAndFlush(command);
         return command.getFuture();
@@ -65,7 +71,7 @@ public class RedisClient implements RedisCommandExecutor {
      * @param commands the actions to be performed within the transaction
      */
     public void doInTransaction(final Consumer<RedisCommandExecutor> commands) {
-        final RedisTransaction transaction = new RedisTransaction();
+        final RedisTransaction transaction = new RedisTransaction(getCharset());
 
         commands.accept(transaction);
         channel.writeAndFlush(transaction);

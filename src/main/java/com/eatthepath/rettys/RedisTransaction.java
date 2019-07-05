@@ -3,6 +3,7 @@ package com.eatthepath.rettys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +16,9 @@ import java.util.function.Consumer;
  *
  * @see RedisClient#doInTransaction(Consumer)
  */
-class RedisTransaction implements RedisCommandExecutor {
+class RedisTransaction extends RedisCommandExecutorAdapter {
+
+    private final Charset charset;
 
     private final RedisCommand<Void> multiCommand;
     private final List<RedisCommand> commands;
@@ -23,7 +26,9 @@ class RedisTransaction implements RedisCommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(RedisTransaction.class);
 
-    RedisTransaction() {
+    RedisTransaction(final Charset charset) {
+        this.charset = charset;
+
         multiCommand = RedisCommandFactory.buildMultiCommand();
         commands = new ArrayList<>();
         execCommand = RedisCommandFactory.buildExecCommand();
@@ -50,6 +55,11 @@ class RedisTransaction implements RedisCommandExecutor {
                 }
             }
         });
+    }
+
+    @Override
+    public Charset getCharset() {
+        return charset;
     }
 
     @Override

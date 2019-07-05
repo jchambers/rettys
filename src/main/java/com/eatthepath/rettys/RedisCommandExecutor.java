@@ -9,33 +9,17 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface RedisCommandExecutor {
 
-    <T> CompletableFuture<T> executeCommand(RedisCommand<T> command);
+    CompletableFuture<Long> llen(final Object key);
 
-    default CompletableFuture<Long> llen(final Object key) {
-        return executeCommand(RedisCommandFactory.buildLlenCommand(key));
-    };
+    CompletableFuture<Long> memoryUsage(final byte[] key);
 
-    default CompletableFuture<Long> memoryUsage(final byte[] key) {
-        return executeCommand(RedisCommandFactory.buildMemoryUsageCommand(key));
-    }
+    CompletableFuture<Void> multi();
 
-    default CompletableFuture<Void> multi() {
-        return executeCommand(RedisCommandFactory.buildMultiCommand());
-    }
+    CompletableFuture<ScanResponse> scan(final Object cursor);
 
-    default CompletableFuture<ScanResponse> scan(final Object cursor) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor));
-    }
+    CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern);
 
-    default CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern));
-    }
+    CompletableFuture<ScanResponse> scan(final Object cursor, final long count);
 
-    default CompletableFuture<ScanResponse> scan(final Object cursor, final long count) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, count));
-    }
-
-    default CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count));
-    }
+    CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count);
 }
