@@ -3,6 +3,7 @@ package com.eatthepath.rettys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -15,7 +16,7 @@ class RedisTransactionTest {
 
     @BeforeEach
     void beforeEach() {
-        transaction = new RedisTransaction();
+        transaction = new RedisTransaction(StandardCharsets.UTF_8);
     }
 
     @Test
