@@ -26,21 +26,21 @@ abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor));
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, getCharset()));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern));
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, getCharset()));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor, final long count) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, count));
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, count, getCharset()));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count));
+        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count, getCharset()));
     }
 }

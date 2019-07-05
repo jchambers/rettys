@@ -18,10 +18,10 @@ class ScanSpliteratorTest {
 
     @Test
     void tryAdvance() {
-        final List<byte[][]> keys = Arrays.asList(
-                new byte[][] { "First key".getBytes() },
-                new byte[0][],
-                new byte[][] { "Second key".getBytes() }
+        final List<String[]> keys = Arrays.asList(
+                new String[] { "First key" },
+                new String[0],
+                new String[] { "Second key" }
         );
 
         final Function<byte[], ScanResponse> scanResponseFunction = (cursor) -> {
@@ -33,7 +33,7 @@ class ScanSpliteratorTest {
                 final byte[] nextCursor = String.valueOf(cursorAsLong + 1).getBytes(StandardCharsets.US_ASCII);
                 scanResponse = new ScanResponse(nextCursor, keys.get((int) cursorAsLong));
             } else {
-                scanResponse = new ScanResponse(new byte[] { '0' }, new byte[0][]);
+                scanResponse = new ScanResponse(new byte[] { '0' }, new String[0]);
             }
 
             return scanResponse;
@@ -42,13 +42,10 @@ class ScanSpliteratorTest {
         final ScanSpliterator scanSpliterator = new ScanSpliterator(scanResponseFunction);
         final AtomicInteger i = new AtomicInteger(0);
 
-        final byte[][] expectedKeys = new byte[][] {
-                "First key".getBytes(),
-                "Second key".getBytes()
-        };
+        final String[] expectedKeys = new String[] { "First key", "Second key" };
 
         scanSpliterator.forEachRemaining((key) -> {
-            assertArrayEquals(expectedKeys[i.getAndIncrement()], key);
+            assertEquals(expectedKeys[i.getAndIncrement()], key);
         });
 
         assertEquals(expectedKeys.length, i.get());
