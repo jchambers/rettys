@@ -7,6 +7,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -22,11 +23,7 @@ public class RedisClient extends RedisCommandExecutorAdapter {
     // TODO Add mechanisms to configure and gracefully shut down this event loop group
     private final EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
 
-    public RedisClient(final InetSocketAddress inetSocketAddress) throws InterruptedException {
-        this(inetSocketAddress, Charset.defaultCharset());
-    }
-
-    public RedisClient(final InetSocketAddress inetSocketAddress, final Charset charset) throws InterruptedException {
+    RedisClient(final SocketAddress inetSocketAddress, final Charset charset) throws InterruptedException {
         this.charset = charset;
 
         final Bootstrap bootstrap = new Bootstrap();
