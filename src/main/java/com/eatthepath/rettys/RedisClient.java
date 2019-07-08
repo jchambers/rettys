@@ -5,6 +5,8 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslHandler;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -23,7 +25,7 @@ public class RedisClient extends RedisCommandExecutorAdapter {
     // TODO Add mechanisms to configure and gracefully shut down this event loop group
     private final EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
 
-    RedisClient(final SocketAddress inetSocketAddress, final Charset charset) throws InterruptedException {
+    RedisClient(final SocketAddress inetSocketAddress, final Charset charset, final boolean useSsl) throws InterruptedException {
         this.charset = charset;
 
         final Bootstrap bootstrap = new Bootstrap();
@@ -35,6 +37,10 @@ public class RedisClient extends RedisCommandExecutorAdapter {
             @Override
             protected void initChannel(final SocketChannel channel) throws Exception {
                 final ChannelPipeline pipeline = channel.pipeline();
+
+                if (useSsl) {
+                    pipeline.addLast(new SslHandler(SslContextBuilder.forClient().build().newEngine(channel.alloc())));
+                }
 
                 pipeline.addLast(new RedisFrameDecoder());
                 // TODO Make this configurable

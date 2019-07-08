@@ -10,6 +10,8 @@ public class RedisClientBuilder {
 
     private Charset charset = Charset.defaultCharset();
 
+    private boolean useSsl;
+
     public RedisClientBuilder setSocketAddress(final SocketAddress socketAddress) {
         this.socketAddress = socketAddress;
         return this;
@@ -20,11 +22,16 @@ public class RedisClientBuilder {
         return this;
     }
 
+    public RedisClientBuilder setUseSsl(final boolean useSsl) {
+        this.useSsl = useSsl;
+        return this;
+    }
+
     public RedisClient buildClient() throws InterruptedException {
         if (socketAddress == null) {
             throw new IllegalStateException("Socket address must be set before building a client.");
         }
 
-        return new RedisClient(socketAddress, charset);
+        return new RedisClient(socketAddress, charset, useSsl);
     }
 }
