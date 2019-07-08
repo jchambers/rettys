@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 
@@ -41,6 +42,9 @@ public class RedisClient extends RedisCommandExecutorAdapter {
                 if (useSsl) {
                     pipeline.addLast(new SslHandler(SslContextBuilder.forClient().build().newEngine(channel.alloc())));
                 }
+
+                // TODO Tune parameters
+                pipeline.addLast(new FlushConsolidationHandler());
 
                 pipeline.addLast(new RedisFrameDecoder());
                 // TODO Make this configurable
