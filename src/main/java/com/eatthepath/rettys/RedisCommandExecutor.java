@@ -9,6 +9,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface RedisCommandExecutor {
 
+    CompletableFuture<Void> auth(String password);
+
     CompletableFuture<Long> llen(final Object key);
 
     CompletableFuture<Long> memoryUsage(final byte[] key);

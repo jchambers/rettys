@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
  * An enumeration of Redis keywords (commands, subcommands, and options).
  */
 enum RedisKeyword {
+    AUTH("AUTH"),
     COUNT("COUNT"),
     EXEC("EXEC"),
     LLEN("LLEN"),

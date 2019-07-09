@@ -10,6 +10,13 @@ abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
     abstract Charset getCharset();
 
     @Override
+    public CompletableFuture<Void> auth(final String password) {
+        return executeCommand(new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER,
+                RedisKeyword.AUTH,
+                password));
+    }
+
+    @Override
     public CompletableFuture<Long> llen(final Object key) {
         return executeCommand(new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
                 RedisKeyword.LLEN,
