@@ -11,17 +11,17 @@ public interface RedisCommandExecutor {
 
     CompletableFuture<Void> auth(String password);
 
-    CompletableFuture<Long> llen(final Object key);
+    CompletableFuture<Long> llen(Object key);
 
-    CompletableFuture<Long> memoryUsage(final byte[] key);
+    CompletableFuture<Long> memoryUsage(byte[] key);
 
     CompletableFuture<Void> multi();
 
-    CompletableFuture<ScanResponse> scan(final Object cursor);
+    CompletableFuture<ScanResponse> scan(Object cursor);
 
-    CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern);
+    CompletableFuture<ScanResponse> scan(Object cursor, String matchPattern);
 
-    CompletableFuture<ScanResponse> scan(final Object cursor, final long count);
+    CompletableFuture<ScanResponse> scan(Object cursor, long count);
 
-    CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count);
+    CompletableFuture<ScanResponse> scan(Object cursor, String matchPattern, long count);
 }
