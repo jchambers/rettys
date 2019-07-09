@@ -29,9 +29,9 @@ class RedisTransaction extends RedisCommandExecutorAdapter {
     RedisTransaction(final Charset charset) {
         this.charset = charset;
 
-        multiCommand = RedisCommandFactory.buildMultiCommand();
+        multiCommand = new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER, RedisKeyword.MULTI);
         commands = new ArrayList<>();
-        execCommand = RedisCommandFactory.buildExecCommand();
+        execCommand = new RedisCommand<>(RedisResponseConverters.OBJECT_ARRAY_CONVERTER, RedisKeyword.EXEC);
 
         multiCommand.getFuture().whenComplete((v, cause) -> {
             if (cause != null) {

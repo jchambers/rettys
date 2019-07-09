@@ -85,22 +85,18 @@ public class RedisClient extends RedisCommandExecutorAdapter {
     };
 
     public Stream<String> scan() {
-        return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, getCharset())).join()), false);
+        return StreamSupport.stream(new ScanSpliterator(cursor -> scan(cursor).join()), false);
     }
 
     public Stream<String> scan(final String matchPattern) {
-        return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, getCharset())).join()), false);
+        return StreamSupport.stream(new ScanSpliterator(cursor -> scan(cursor, matchPattern).join()), false);
     }
 
     public Stream<String> scan(final long count) {
-        return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, count, getCharset())).join()), false);
+        return StreamSupport.stream(new ScanSpliterator(cursor -> scan(cursor, count).join()), false);
     }
 
     public Stream<String> scan(final String matchPattern, final long count) {
-        return StreamSupport.stream(new ScanSpliterator((cursor) ->
-                executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count, getCharset())).join()), false);
+        return StreamSupport.stream(new ScanSpliterator(cursor -> scan(cursor, matchPattern, count).join()), false);
     }
 }

@@ -11,36 +11,58 @@ abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
 
     @Override
     public CompletableFuture<Long> llen(final Object key) {
-        return executeCommand(RedisCommandFactory.buildLlenCommand(key));
+        return executeCommand(new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
+                RedisKeyword.LLEN,
+                key));
     };
 
     @Override
     public CompletableFuture<Long> memoryUsage(final byte[] key) {
-        return executeCommand(RedisCommandFactory.buildMemoryUsageCommand(key));
+        return executeCommand(new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
+                RedisKeyword.MEMORY,
+                RedisKeyword.USAGE,
+                key));
     }
 
     @Override
     public CompletableFuture<Void> multi() {
-        return executeCommand(RedisCommandFactory.buildMultiCommand());
+        return executeCommand(new RedisCommand<>(RedisResponseConverters.VOID_CONVERTER,
+                RedisKeyword.MULTI));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, getCharset()));
+        return executeCommand(new RedisCommand<>(ScanResponse.scanResponseConverter(getCharset()),
+                RedisKeyword.SCAN,
+                cursor));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, getCharset()));
+        return executeCommand(new RedisCommand<>(ScanResponse.scanResponseConverter(getCharset()),
+                RedisKeyword.SCAN,
+                cursor,
+                RedisKeyword.MATCH,
+                matchPattern));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor, final long count) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, count, getCharset()));
+        return executeCommand(new RedisCommand<>(ScanResponse.scanResponseConverter(getCharset()),
+                RedisKeyword.SCAN,
+                cursor,
+                RedisKeyword.COUNT,
+                count));
     }
 
     @Override
     public CompletableFuture<ScanResponse> scan(final Object cursor, final String matchPattern, final long count) {
-        return executeCommand(RedisCommandFactory.buildScanCommand(cursor, matchPattern, count, getCharset()));
+        return executeCommand(new RedisCommand<>(ScanResponse.scanResponseConverter(getCharset()),
+                RedisKeyword.SCAN,
+                cursor,
+                RedisKeyword.MATCH,
+                matchPattern,
+                RedisKeyword.COUNT,
+                count));
     }
 }
