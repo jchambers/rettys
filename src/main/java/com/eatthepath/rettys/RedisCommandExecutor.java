@@ -13,7 +13,7 @@ public interface RedisCommandExecutor {
 
     CompletableFuture<Long> llen(Object key);
 
-    CompletableFuture<Long> memoryUsage(byte[] key);
+    CompletableFuture<Long> memoryUsage(Object key);
 
     CompletableFuture<Void> multi();
 

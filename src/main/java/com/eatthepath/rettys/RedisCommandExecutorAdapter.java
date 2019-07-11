@@ -24,7 +24,7 @@ abstract class RedisCommandExecutorAdapter implements RedisCommandExecutor {
     };
 
     @Override
-    public CompletableFuture<Long> memoryUsage(final byte[] key) {
+    public CompletableFuture<Long> memoryUsage(final Object key) {
         return executeCommand(new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
                 RedisKeyword.MEMORY,
                 RedisKeyword.USAGE,
