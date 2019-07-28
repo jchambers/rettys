@@ -74,31 +74,29 @@ public class RedisCluster {
         int fullKeyCrc = 0;
         int bracketCrc = 0;
 
-        int openBracketIndex = -1;
-        int closeBracketIndex = -1;
+        boolean foundOpeningBracket = false;
+        boolean scanForCloseBracket = false;
 
         for (int i = 0; i < key.length; i++) {
             // Check for a close bracket BEFORE we update either CRC; if we found a good closing bracket, we want to
             // exclude it from the bracket-y CRC and just return the checksum for the parts of the key that are strictly
             // between the brackets.
-            if (key[i] == '}' && closeBracketIndex == -1 && openBracketIndex != -1) {
-                closeBracketIndex = i;
-
-                // If the '{' and '}' are directly adjacent, Redis wants us to use the whole key.
-                if (closeBracketIndex - openBracketIndex > 1) {
-                    return bracketCrc & 0xffff;
-                }
+            if (scanForCloseBracket && key[i] == '}') {
+                return bracketCrc & 0xffff;
             }
 
             fullKeyCrc = ((fullKeyCrc << 8) ^ CRC16_VALUES[((fullKeyCrc >> 8) ^ key[i]) & 0x00ff]);
 
-            if (openBracketIndex != -1 && closeBracketIndex == -1) {
-                // We have found an opening bracket, but have not yet found a closing bracket.
+            if (scanForCloseBracket) {
+                // We found an opening bracket, but have not yet found a closing bracket.
                 bracketCrc = ((bracketCrc << 8) ^ CRC16_VALUES[((bracketCrc >> 8) ^ key[i]) & 0x00ff]);
             }
 
-            if (key[i] == '{' && openBracketIndex == -1) {
-                openBracketIndex = i;
+            if (!foundOpeningBracket && key[i] == '{') {
+                foundOpeningBracket = true;
+
+                // We should use the whole key if the first opening bracket is right next to a closing bracket.
+                scanForCloseBracket = i + i < key.length && key[i + 1] != '}';
             }
         }
 
