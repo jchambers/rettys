@@ -53,44 +53,26 @@ public class RedisCluster {
      * Cluster Specification - Appendix A: CRC16 reference implementation in ANSI C</a>
      */
     static int getRedisCrc16(final byte[] key) {
-        // So, obviously, this isn't straight CRC16. If there's a non-empty portion of the key enclosed between '{' and
-        // '}' characters, Redis just wants the checksum for that portion. Otherwise, it wants the CRC16 for the whole
-        // key. The obvious thing to do here is to look for an opening bracket, record its index, then scan for a
+        // Redis has a notion of "hash tags" (not to be confused with the social media concept) that demands we do
+        // something a little fancier than vanilla CRC16. If there's a non-empty portion of the key enclosed between '{'
+        // and '}' characters, Redis just wants the checksum for that portion. Otherwise, it wants the CRC16 for the
+        // whole key. The obvious thing to do here is to look for an opening bracket, record its index, then scan for a
         // closing bracket if we found an opening bracket. That will certainly get the job done, but it means we're
         // walking through some parts of the key twice: once to find brackets, then again to calculate the CRC.
         //
         // In the interest of efficiency, it'd be great if we could just make one pass through the key rather than
-        // potentially making several passes to scan for brackets. We could think about calculating two CRCs in
-        // parallel. In that case, we'd always be calculating a CRC for the whole key, but would start calculating a CRC
-        // for the "between brackets" part of things as soon as we see an opening '{'.
+        // potentially making several passes to scan for brackets. To do that, we take an optimistic approach and start
+        // calculating the checksum for the whole key as if it contained no brackets right off the bat. If we find an
+        // opening bracket, we want to start calculating a checksum for the bracket-y portions in parallel. We may or
+        // may not find a closing bracket. If we do, we'll bail out early and return the bracket-y checksum. If not,
+        // we'll hit the end of the key and return the original checksum.
         //
-        // The parallel-checksums approach is certainly an improvement, but it's also a bit optimistic; what if we see a
-        // '{', but never find a '}'? In that case, we've done twice as much work as we need to for everything after the
-        // first '{' without any payoff. It'd be great if we could find a way to avoid wasting work.
-        //
-        // It turns out that CRC16 has a really handy property. Given two equal-length byte arrays A and B:
-        //
-        //    CRC16(A) ^ CRC16(B) == CRC16(A ^ B)
-        //
-        // Well, we only have one key, and we don't want to create (and then modify) a copy. So how does this help us?
-        // It turns out we can use two "views" of our key to simulate two "virtual arrays." The first has all of the key
-        // content up to and incuding the first bracket, and the second has everything after that bracket. In practice,
-        // it looks like this:
-        //
-        //    Key:                ['f', 'o', 'o', '{', 'b', 'a', 'r', '}']
-        //    Pre-bracket view:   ['f', 'o', 'o', '{',  0,   0,   0,   0 ]
-        //    Post-bracket view:  [ 0,   0,   0,   0,  'b', 'a', 'r', '}']
-        //
-        // If we XOR the two "views" together, we wind up with the original key, which is very handy. This means that we
-        // can be working on a checksum for the whole key up until the first bracket, then start working on the checksum
-        // for the bracket-y part of the key as soon as we see a '{'. If we find a closing '}', then we can return the
-        // checksum for the bracket-y parts immediately. If we don't, then we can re-combine the two pieces as if
-        // nothing ever happened.
-        //
-        // And that, friends, is exactly what we're about to do.
+        // This can, in theory, lead to some wasted work, but benchmarking suggests that updating the checksum is not
+        // significantly more expensive than checking to see if a byte in the key is a bracket or not (which is pretty
+        // wild), so we still come out ahead by avoiding multiple passes through the key.
 
-        int preBracketCrc = 0;
-        int postBracketCrc = 0;
+        int fullKeyCrc = 0;
+        int bracketCrc = 0;
 
         int openBracketIndex = -1;
         int closeBracketIndex = -1;
@@ -102,18 +84,17 @@ public class RedisCluster {
             if (key[i] == '}' && closeBracketIndex == -1 && openBracketIndex != -1) {
                 closeBracketIndex = i;
 
+                // If the '{' and '}' are directly adjacent, Redis wants us to use the whole key.
                 if (closeBracketIndex - openBracketIndex > 1) {
-                    return postBracketCrc & 0xffff;
+                    return bracketCrc & 0xffff;
                 }
             }
 
-            if (openBracketIndex == -1) {
-                // We don't need to update postBracketCrc if we haven't found an open bracket yet; it'll always be zero
-                // even if we do update it.
-                preBracketCrc = ((preBracketCrc << 8) ^ CRC16_VALUES[((preBracketCrc >> 8) ^ key[i]) & 0x00ff]);
-            } else {
-                preBracketCrc = ((preBracketCrc << 8) ^ CRC16_VALUES[(preBracketCrc >> 8) & 0x00ff]);
-                postBracketCrc = ((postBracketCrc << 8) ^ CRC16_VALUES[((postBracketCrc >> 8) ^ key[i]) & 0x00ff]);
+            fullKeyCrc = ((fullKeyCrc << 8) ^ CRC16_VALUES[((fullKeyCrc >> 8) ^ key[i]) & 0x00ff]);
+
+            if (openBracketIndex != -1 && closeBracketIndex == -1) {
+                // We have found an opening bracket, but have not yet found a closing bracket.
+                bracketCrc = ((bracketCrc << 8) ^ CRC16_VALUES[((bracketCrc >> 8) ^ key[i]) & 0x00ff]);
             }
 
             if (key[i] == '{' && openBracketIndex == -1) {
@@ -121,9 +102,6 @@ public class RedisCluster {
             }
         }
 
-        // We either didn't find any brackets at all (which means we're doing preBracketCrc ^ 0, which is just
-        // preBracketCrc) or we found content after an opening bracket, but no closing bracket (in which case we can get
-        // the CRC for the whole key by XORing the two parts together).
-        return (preBracketCrc ^ postBracketCrc) & 0xffff;
+        return fullKeyCrc & 0xffff;
     }
 }
