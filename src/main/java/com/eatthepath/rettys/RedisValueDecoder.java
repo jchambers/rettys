@@ -87,11 +87,11 @@ class RedisValueDecoder extends ByteToMessageDecoder {
             }
 
             case INTEGER_PREFIX: {
-                return Integer.parseInt(readString(byteBuf), 10);
+                return readInteger(byteBuf);
             }
 
             case BULK_STRING_PREFIX: {
-                final int bulkStringLength = Integer.parseInt(readString(byteBuf), 10);
+                final int bulkStringLength = (int) readInteger(byteBuf);
 
                 if (bulkStringLength < 0) {
                     return null;
@@ -107,7 +107,7 @@ class RedisValueDecoder extends ByteToMessageDecoder {
             }
 
             case ARRAY_PREFIX: {
-                final int arrayLength = Integer.parseInt(readString(byteBuf), 10);
+                final int arrayLength = (int) readInteger(byteBuf);
 
                 if (arrayLength < 0) {
                     return null;
@@ -146,5 +146,26 @@ class RedisValueDecoder extends ByteToMessageDecoder {
         byteBuf.skipBytes(2);
 
         return string;
+    }
+
+    /**
+     * Reads the next integer value from the given byte buffer. This method consumes the trailing '\r\n'.
+     *
+     * @param byteBuf the buffer from which to read the next '\r\n'-terminated integer
+     *
+     * @return the next '\r\n'-terminated integer in the given byte buffer
+     */
+    private long readInteger(final ByteBuf byteBuf) {
+        long l = 0;
+
+        for (byte b = byteBuf.readByte(); b != '\r'; b = byteBuf.readByte()) {
+            l *= 10;
+            l += b - '0';
+        }
+
+        // We've already read the trailing '\r' in the loop above; skip the following '\n', too.
+        byteBuf.skipBytes(1);
+
+        return l;
     }
 }

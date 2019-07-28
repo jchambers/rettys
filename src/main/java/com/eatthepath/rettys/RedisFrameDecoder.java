@@ -5,7 +5,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -78,18 +77,9 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
                         throw BUFFER_UNDERRUN_EXCEPTION;
                     }
 
-                    final int bulkStringLength;
-                    {
-                        final byte[] bulkStringLengthBytes = new byte[bytesBeforeCarriageReturn];
-                        byteBuf.readBytes(bulkStringLengthBytes);
+                    final int bulkStringLength = (int) readInteger(byteBuf);
 
-                        bulkStringLength = Integer.parseInt(
-                                new String(bulkStringLengthBytes, StandardCharsets.US_ASCII), 10);
-                    }
-
-                    // At this point, the read index is just before the "\r" after the bulk string length section. We
-                    // want to make sure all the rest of the data is there
-
+                    // At this point, the read index is just after the '\r\n' after the bulk string length section.
                     if (bulkStringLength >= 0) {
                         // In total, we have:
                         //
@@ -115,18 +105,7 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
                         throw BUFFER_UNDERRUN_EXCEPTION;
                     }
 
-                    final int arrayLength;
-                    {
-                        final byte[] arrayLengthBytes = new byte[bytesBeforeCarriageReturn];
-                        byteBuf.readBytes(arrayLengthBytes);
-
-                        arrayLength = Integer.parseInt(
-                                new String(arrayLengthBytes, StandardCharsets.US_ASCII), 10);
-                    }
-
-                    // Skip the CRLF after the array length to position the read index just before the first value (if
-                    // any)
-                    byteBuf.skipBytes(2);
+                    final int arrayLength = (int) readInteger(byteBuf);
 
                     int totalArrayElementLength = 0;
 
@@ -150,5 +129,26 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
         }
 
         return frameLength;
+    }
+
+    /**
+     * Reads the next integer value from the given byte buffer. This method consumes the trailing '\r\n'.
+     *
+     * @param byteBuf the buffer from which to read the next '\r\n'-terminated integer
+     *
+     * @return the next '\r\n'-terminated integer in the given byte buffer
+     */
+    private long readInteger(final ByteBuf byteBuf) {
+        long l = 0;
+
+        for (byte b = byteBuf.readByte(); b != '\r'; b = byteBuf.readByte()) {
+            l *= 10;
+            l += b - '0';
+        }
+
+        // We've already read the trailing '\r' in the loop above; skip the following '\n', too.
+        byteBuf.skipBytes(1);
+
+        return l;
     }
 }

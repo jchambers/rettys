@@ -56,7 +56,7 @@ class RedisValueDecoderTest {
         return Stream.of(
                 arguments("+OK\r\n", "OK"),
                 arguments("-Error message\r\n", new RedisException("Error message")),
-                arguments(":1000\r\n", 1000),
+                arguments(":1000\r\n", 1000L),
                 arguments("$6\r\nfoobar\r\n", "foobar".getBytes(StandardCharsets.US_ASCII)),
                 arguments("$0\r\n\r\n", new byte[0]),
                 arguments("$-1\r\n", null),
