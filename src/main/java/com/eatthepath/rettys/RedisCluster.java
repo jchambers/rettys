@@ -37,14 +37,93 @@ public class RedisCluster {
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
     };
 
-    // Via https://redis.io/topics/cluster-spec
-    static int crc16(final byte[] bytes) {
-        int crc = 0;
+    /**
+     * Returns a CRC16 checksum for the given Redis key or the portion of the key enclosed between '{' and '}'
+     * characters as described in <a href="https://redis.io/topics/cluster-spec#keys-hash-tags">Redis Cluster
+     * Specification - Keys hash tags</a>.
+     *
+     * @param key the Redis key for which to calculate a CRC16 checksum
+     *
+     * @return the CRC checksum for the given Redis key or the portion of the key enclosed between '{' and '}'
+     * characters
+     *
+     * @see <a href="https://redis.io/topics/cluster-spec#keys-hash-tags">Redis Cluster Specification - Keys hash
+     * tags</a>
+     * @see <a href="https://redis.io/topics/cluster-spec#appendix-a-crc16-reference-implementation-in-ansi-c">Redis
+     * Cluster Specification - Appendix A: CRC16 reference implementation in ANSI C</a>
+     */
+    static int getRedisCrc16(final byte[] key) {
+        // So, obviously, this isn't straight CRC16. If there's a non-empty portion of the key enclosed between '{' and
+        // '}' characters, Redis just wants the checksum for that portion. Otherwise, it wants the CRC16 for the whole
+        // key. The obvious thing to do here is to look for an opening bracket, record its index, then scan for a
+        // closing bracket if we found an opening bracket. That will certainly get the job done, but it means we're
+        // walking through some parts of the key twice: once to find brackets, then again to calculate the CRC.
+        //
+        // In the interest of efficiency, it'd be great if we could just make one pass through the key rather than
+        // potentially making several passes to scan for brackets. We could think about calculating two CRCs in
+        // parallel. In that case, we'd always be calculating a CRC for the whole key, but would start calculating a CRC
+        // for the "between brackets" part of things as soon as we see an opening '{'.
+        //
+        // The parallel-checksums approach is certainly an improvement, but it's also a bit optimistic; what if we see a
+        // '{', but never find a '}'? In that case, we've done twice as much work as we need to for everything after the
+        // first '{' without any payoff. It'd be great if we could find a way to avoid wasting work.
+        //
+        // It turns out that CRC16 has a really handy property. Given two equal-length byte arrays A and B:
+        //
+        //    CRC16(A) ^ CRC16(B) == CRC16(A ^ B)
+        //
+        // Well, we only have one key, and we don't want to create (and then modify) a copy. So how does this help us?
+        // It turns out we can use two "views" of our key to simulate two "virtual arrays." The first has all of the key
+        // content up to and incuding the first bracket, and the second has everything after that bracket. In practice,
+        // it looks like this:
+        //
+        //    Key:                ['f', 'o', 'o', '{', 'b', 'a', 'r', '}']
+        //    Pre-bracket view:   ['f', 'o', 'o', '{',  0,   0,   0,   0 ]
+        //    Post-bracket view:  [ 0,   0,   0,   0,  'b', 'a', 'r', '}']
+        //
+        // If we XOR the two "views" together, we wind up with the original key, which is very handy. This means that we
+        // can be working on a checksum for the whole key up until the first bracket, then start working on the checksum
+        // for the bracket-y part of the key as soon as we see a '{'. If we find a closing '}', then we can return the
+        // checksum for the bracket-y parts immediately. If we don't, then we can re-combine the two pieces as if
+        // nothing ever happened.
+        //
+        // And that, friends, is exactly what we're about to do.
 
-        for (final byte b : bytes) {
-            crc = ((crc << 8) ^ CRC16_VALUES[((crc >> 8) ^ b) & 0x00ff]);
+        int preBracketCrc = 0;
+        int postBracketCrc = 0;
+
+        int openBracketIndex = -1;
+        int closeBracketIndex = -1;
+
+        for (int i = 0; i < key.length; i++) {
+            // Check for a close bracket BEFORE we update either CRC; if we found a good closing bracket, we want to
+            // exclude it from the bracket-y CRC and just return the checksum for the parts of the key that are strictly
+            // between the brackets.
+            if (key[i] == '}' && closeBracketIndex == -1 && openBracketIndex != -1) {
+                closeBracketIndex = i;
+
+                if (closeBracketIndex - openBracketIndex > 1) {
+                    return postBracketCrc & 0xffff;
+                }
+            }
+
+            if (openBracketIndex == -1) {
+                // We don't need to update postBracketCrc if we haven't found an open bracket yet; it'll always be zero
+                // even if we do update it.
+                preBracketCrc = ((preBracketCrc << 8) ^ CRC16_VALUES[((preBracketCrc >> 8) ^ key[i]) & 0x00ff]);
+            } else {
+                preBracketCrc = ((preBracketCrc << 8) ^ CRC16_VALUES[(preBracketCrc >> 8) & 0x00ff]);
+                postBracketCrc = ((postBracketCrc << 8) ^ CRC16_VALUES[((postBracketCrc >> 8) ^ key[i]) & 0x00ff]);
+            }
+
+            if (key[i] == '{' && openBracketIndex == -1) {
+                openBracketIndex = i;
+            }
         }
 
-        return crc & 0xffff;
+        // We either didn't find any brackets at all (which means we're doing preBracketCrc ^ 0, which is just
+        // preBracketCrc) or we found content after an opening bracket, but no closing bracket (in which case we can get
+        // the CRC for the whole key by XORing the two parts together).
+        return (preBracketCrc ^ postBracketCrc) & 0xffff;
     }
 }
