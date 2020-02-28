@@ -1,0 +1,29 @@
+@startuml
+
+interface RedisCommand {
+    Object[] components
+}
+
+interface KeyedRedisCommand extends RedisCommand {
+    Object[] getKeys()
+}
+
+class RedisClient implements RedisResponseConsumer {
+    Stream<String> scan()
+}
+
+class RedisChannel implements RedisCommandExecutor {
+}
+
+interface RedisResponseConsumer {
+    void consumeResponse(RedisCommand, Object)
+}
+
+interface RedisCommandExecutor {
+    CompletableFuture<Object> executeCommand(RedisCommand)
+}
+
+RedisChannel o-- RedisResponseConsumer
+RedisClient o-- RedisChannel
+
+@enduml
