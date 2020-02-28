@@ -70,20 +70,6 @@ public class RedisClient extends RedisCommandExecutorAdapter {
         return command.getFuture();
     }
 
-    /**
-     * Executes the given commands within a Redis transaction. The given commands <em>must</em> be called via the
-     * provided {@link RedisCommandExecutor}; commands called directly via a {@code RedisClient} will be executed
-     * outside the scope of the transaction.
-     *
-     * @param commands the actions to be performed within the transaction
-     */
-    public void doInTransaction(final Consumer<RedisCommandExecutor> commands) {
-        final RedisTransaction transaction = new RedisTransaction(getCharset());
-
-        commands.accept(transaction);
-        channel.writeAndFlush(transaction);
-    };
-
     public Stream<String> scan() {
         return StreamSupport.stream(new ScanSpliterator(cursor -> scan(cursor).join()), false);
     }

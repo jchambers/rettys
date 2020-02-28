@@ -47,13 +47,7 @@ class RedisRequestResponseHandler extends ChannelInboundOutboundHandlerAdapter {
 
     @Override
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise writePromise) {
-        if (msg instanceof RedisTransaction) {
-            final RedisTransaction transaction = (RedisTransaction) msg;
-
-            write(ctx, transaction.getMultiCommand(), ctx.newPromise());
-            transaction.getCommands().forEach((command) -> write(ctx, command, ctx.newPromise()));
-            write(ctx, transaction.getExecCommand(), ctx.newPromise());
-        } else if (msg instanceof RedisCommand) {
+        if (msg instanceof RedisCommand) {
             final RedisCommand command = (RedisCommand) msg;
 
             pendingCommands.addLast(command);
