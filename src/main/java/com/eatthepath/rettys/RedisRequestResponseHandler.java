@@ -1,5 +1,6 @@
 package com.eatthepath.rettys;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
@@ -14,7 +15,7 @@ import java.util.Deque;
 /**
  * A Redis request/response handler tracks pending commands and matches them to responses from the Redis server.
  */
-class RedisRequestResponseHandler extends ChannelInboundOutboundHandlerAdapter {
+class RedisRequestResponseHandler extends ChannelDuplexHandler {
 
     private final Deque<RedisCommand> pendingCommands = new ArrayDeque<>();
 

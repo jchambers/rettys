@@ -1,6 +1,7 @@
 package com.eatthepath.rettys;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.slf4j.Logger;
@@ -8,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 
-public class RedisFrameLoggingHandler extends ChannelInboundOutboundHandlerAdapter {
+public class RedisFrameLoggingHandler extends ChannelDuplexHandler {
 
     private final Charset charset;
 
