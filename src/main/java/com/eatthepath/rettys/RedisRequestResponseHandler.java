@@ -72,6 +72,6 @@ class RedisRequestResponseHandler extends ChannelDuplexHandler {
 
         pendingCommands.clear();
 
-        ctx.fireChannelActive();
+        ctx.fireChannelInactive();
     }
 }
