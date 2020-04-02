@@ -5,8 +5,6 @@ import com.eatthepath.rettys.RedisResponseConsumer;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +20,7 @@ class RedisRequestResponseHandler extends ChannelDuplexHandler {
     private final Deque<RedisCommand> pendingCommands = new ArrayDeque<>();
     private final RedisResponseConsumer responseConsumer;
 
-    private static final IOException CHANNEL_CLOSED_EXCEPTION =
+    static final IOException CHANNEL_CLOSED_EXCEPTION =
             new IOException("Channel closed before the Redis server could respond.");
 
     private static final Logger log = LoggerFactory.getLogger(RedisRequestResponseHandler.class);
@@ -47,7 +45,7 @@ class RedisRequestResponseHandler extends ChannelDuplexHandler {
         if (msg instanceof RedisCommand) {
             final RedisCommand command = (RedisCommand) msg;
 
-            writePromise.addListener((GenericFutureListener<Future<Void>>) future -> {
+            writePromise.addListener(future -> {
                 if (future.isSuccess()) {
                     pendingCommands.addLast(command);
                 } else {
