@@ -13,12 +13,6 @@ import java.util.List;
  */
 class RedisFrameDecoder extends ByteToMessageDecoder {
 
-    private static final byte SIMPLE_STRING_PREFIX = '+';
-    private static final byte ERROR_STRING_PREFIX = '-';
-    private static final byte INTEGER_PREFIX = ':';
-    private static final byte BULK_STRING_PREFIX = '$';
-    private static final byte ARRAY_PREFIX = '*';
-
     private static final IndexOutOfBoundsException BUFFER_UNDERRUN_EXCEPTION = new IndexOutOfBoundsException();
 
     @Override
@@ -54,9 +48,9 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
             final byte prefixByte = byteBuf.readByte();
 
             switch (prefixByte) {
-                case SIMPLE_STRING_PREFIX:
-                case ERROR_STRING_PREFIX:
-                case INTEGER_PREFIX: {
+                case RedisProtocolUtil.SIMPLE_STRING_PREFIX:
+                case RedisProtocolUtil.ERROR_STRING_PREFIX:
+                case RedisProtocolUtil.INTEGER_PREFIX: {
                     final int bytesBeforeNewline = byteBuf.bytesBefore((byte) '\n');
 
                     if (bytesBeforeNewline < 0) {
@@ -70,14 +64,14 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
                     break;
                 }
 
-                case BULK_STRING_PREFIX: {
+                case RedisProtocolUtil.BULK_STRING_PREFIX: {
                     final int bytesBeforeCarriageReturn = byteBuf.bytesBefore((byte) '\r');
 
                     if (bytesBeforeCarriageReturn < 0) {
                         throw BUFFER_UNDERRUN_EXCEPTION;
                     }
 
-                    final int bulkStringLength = (int) readInteger(byteBuf);
+                    final int bulkStringLength = (int) RedisProtocolUtil.readInteger(byteBuf);
 
                     // At this point, the read index is just after the '\r\n' after the bulk string length section.
                     if (bulkStringLength >= 0) {
@@ -98,14 +92,14 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
                     break;
                 }
 
-                case ARRAY_PREFIX: {
+                case RedisProtocolUtil.ARRAY_PREFIX: {
                     final int bytesBeforeCarriageReturn = byteBuf.bytesBefore((byte) '\r');
 
                     if (bytesBeforeCarriageReturn < 0) {
                         throw BUFFER_UNDERRUN_EXCEPTION;
                     }
 
-                    final int arrayLength = (int) readInteger(byteBuf);
+                    final int arrayLength = (int) RedisProtocolUtil.readInteger(byteBuf);
 
                     int totalArrayElementLength = 0;
 
@@ -129,26 +123,5 @@ class RedisFrameDecoder extends ByteToMessageDecoder {
         }
 
         return frameLength;
-    }
-
-    /**
-     * Reads the next integer value from the given byte buffer. This method consumes the trailing '\r\n'.
-     *
-     * @param byteBuf the buffer from which to read the next '\r\n'-terminated integer
-     *
-     * @return the next '\r\n'-terminated integer in the given byte buffer
-     */
-    private long readInteger(final ByteBuf byteBuf) {
-        long l = 0;
-
-        for (byte b = byteBuf.readByte(); b != '\r'; b = byteBuf.readByte()) {
-            l *= 10;
-            l += b - '0';
-        }
-
-        // We've already read the trailing '\r' in the loop above; skip the following '\n', too.
-        byteBuf.skipBytes(1);
-
-        return l;
     }
 }

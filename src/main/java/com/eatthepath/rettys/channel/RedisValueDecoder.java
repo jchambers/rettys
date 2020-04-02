@@ -53,12 +53,6 @@ import java.util.List;
  */
 class RedisValueDecoder extends ByteToMessageDecoder {
 
-    private static final byte SIMPLE_STRING_PREFIX = '+';
-    private static final byte ERROR_STRING_PREFIX = '-';
-    private static final byte INTEGER_PREFIX = ':';
-    private static final byte BULK_STRING_PREFIX = '$';
-    private static final byte ARRAY_PREFIX = '*';
-
     @Override
     protected void decode(final ChannelHandlerContext context, final ByteBuf in, final List<Object> out) throws Exception {
         // We can assume that the byte buffer we're processing represents a complete Redis value because there's a
@@ -79,20 +73,20 @@ class RedisValueDecoder extends ByteToMessageDecoder {
         final byte prefixByte = byteBuf.readByte();
 
         switch (prefixByte) {
-            case SIMPLE_STRING_PREFIX: {
+            case RedisProtocolUtil.SIMPLE_STRING_PREFIX: {
                 return readString(byteBuf);
             }
 
-            case ERROR_STRING_PREFIX: {
+            case RedisProtocolUtil.ERROR_STRING_PREFIX: {
                 return new RedisException(readString(byteBuf));
             }
 
-            case INTEGER_PREFIX: {
-                return readInteger(byteBuf);
+            case RedisProtocolUtil.INTEGER_PREFIX: {
+                return RedisProtocolUtil.readInteger(byteBuf);
             }
 
-            case BULK_STRING_PREFIX: {
-                final int bulkStringLength = (int) readInteger(byteBuf);
+            case RedisProtocolUtil.BULK_STRING_PREFIX: {
+                final int bulkStringLength = (int) RedisProtocolUtil.readInteger(byteBuf);
 
                 if (bulkStringLength < 0) {
                     return null;
@@ -107,8 +101,8 @@ class RedisValueDecoder extends ByteToMessageDecoder {
                 }
             }
 
-            case ARRAY_PREFIX: {
-                final int arrayLength = (int) readInteger(byteBuf);
+            case RedisProtocolUtil.ARRAY_PREFIX: {
+                final int arrayLength = (int) RedisProtocolUtil.readInteger(byteBuf);
 
                 if (arrayLength < 0) {
                     return null;
@@ -147,26 +141,5 @@ class RedisValueDecoder extends ByteToMessageDecoder {
         byteBuf.skipBytes(2);
 
         return string;
-    }
-
-    /**
-     * Reads the next integer value from the given byte buffer. This method consumes the trailing '\r\n'.
-     *
-     * @param byteBuf the buffer from which to read the next '\r\n'-terminated integer
-     *
-     * @return the next '\r\n'-terminated integer in the given byte buffer
-     */
-    private long readInteger(final ByteBuf byteBuf) {
-        long l = 0;
-
-        for (byte b = byteBuf.readByte(); b != '\r'; b = byteBuf.readByte()) {
-            l *= 10;
-            l += b - '0';
-        }
-
-        // We've already read the trailing '\r' in the loop above; skip the following '\n', too.
-        byteBuf.skipBytes(1);
-
-        return l;
     }
 }

@@ -8,22 +8,20 @@ interface KeyedRedisCommand extends RedisCommand {
     Object[] getKeys()
 }
 
-class RedisClient implements RedisResponseConsumer {
+class RedisClient implements RedisMessageConsumer {
     Stream<String> scan()
 }
 
-class RedisChannel implements RedisCommandExecutor {
-}
-
-interface RedisResponseConsumer {
-    void consumeResponse(RedisCommand, Object)
+interface RedisMessageConsumer {
+    void consumeMessage(Channel, Object)
+    void handleChannelClosure(Channel)
 }
 
 interface RedisCommandExecutor {
     CompletableFuture<Object> executeCommand(RedisCommand)
 }
 
-RedisChannel o-- RedisResponseConsumer
+RedisChannel o-- RedisMessageConsumer
 RedisClient o-- RedisChannel
 
 @enduml
