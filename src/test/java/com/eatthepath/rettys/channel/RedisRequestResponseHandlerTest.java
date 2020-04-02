@@ -2,127 +2,100 @@ package com.eatthepath.rettys.channel;
 
 import com.eatthepath.rettys.*;
 import com.eatthepath.rettys.channel.RedisRequestResponseHandler;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class RedisRequestResponseHandlerTest {
 
+    private RedisResponseConsumer responseConsumer;
     private RedisRequestResponseHandler requestResponseHandler;
+
+    private ChannelHandlerContext context;
 
     @BeforeEach
     void beforeEach() {
-        requestResponseHandler = new RedisRequestResponseHandler();
+        responseConsumer = mock(RedisResponseConsumer.class);
+        requestResponseHandler = new RedisRequestResponseHandler(responseConsumer);
+
+        final Channel channel = mock(Channel.class);
+
+        context = mock(ChannelHandlerContext.class);
+        when(context.channel()).thenReturn(channel);
+
+        when(context.newPromise()).thenAnswer(
+                invocationOnMock -> new DefaultChannelPromise(channel, ImmediateEventExecutor.INSTANCE));
     }
 
     @Test
     void handleRequestResponse() {
-        final RedisCommand<Long> command =
-                new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "Test");
-
-        final Channel channel = new EmbeddedChannel();
-        final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
+        final RedisCommand command = new RedisCommand("LLEN", "Test");
 
         final long redisResponse = 17;
 
-        requestResponseHandler.write(channelHandlerContext, command, channel.newPromise());
-        requestResponseHandler.channelRead(channelHandlerContext, redisResponse);
+        final ChannelPromise writePromise = context.newPromise();
 
-        final long futureResult = assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join);
-        assertEquals(redisResponse, futureResult);
+        requestResponseHandler.write(context, command, writePromise);
+        writePromise.setSuccess();
+
+        requestResponseHandler.channelRead(context, redisResponse);
+
+        verify(responseConsumer).consumeResponse(command, redisResponse);
     }
 
     @Test
-    void handleRequestErrorResponse() {
-        final RedisCommand<Long> command =
-                new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "Test");
-
-        final Channel channel = new EmbeddedChannel();
-        final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
+    void handleRequestRedisErrorResponse() {
+        final RedisCommand command = new RedisCommand("LLEN", "Test");
 
         final RedisException redisException = new RedisException("TEST Test exception");
 
-        requestResponseHandler.write(channelHandlerContext, command, channel.newPromise());
-        requestResponseHandler.channelRead(channelHandlerContext, redisException);
+        final ChannelPromise writePromise = context.newPromise();
 
-        final CompletionException completionException =
-                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join));
+        requestResponseHandler.write(context, command, writePromise);
+        writePromise.setSuccess();
 
-        assertEquals(redisException, completionException.getCause());
+        requestResponseHandler.channelRead(context, redisException);
+
+        verify(responseConsumer).consumeResponse(command, redisException);
     }
 
     @Test
     void handleRequestWriteFailure() {
-        final RedisCommand<Long> command =
-                new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "Test");
+        final RedisCommand command = new RedisCommand("LLEN", "Test");
 
-        final Channel channel = new EmbeddedChannel();
-        final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
+        final ChannelPromise writePromise = context.newPromise();
 
-        final ChannelPromise writePromise = channel.newPromise();
-
-        requestResponseHandler.write(channelHandlerContext, command, writePromise);
+        requestResponseHandler.write(context, command, writePromise);
 
         final IOException ioException = new IOException("A horribleness has befelsterred the children's academy.");
 
         writePromise.setFailure(ioException);
 
-        final CompletionException completionException =
-                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join));
-
-        assertEquals(ioException, completionException.getCause());
+        verify(responseConsumer).handleCommandFailure(command, ioException);
     }
 
     @Test
     void channelInactiveBeforeReply() {
-        final RedisCommand<Long> command =
-                new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "Test");
+        final RedisCommand command = new RedisCommand("LLEN", "Test");
 
-        final Channel channel = new EmbeddedChannel();
-        final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
+        final ChannelPromise writePromise = context.newPromise();
 
-        final ChannelPromise writePromise = channel.newPromise();
+        requestResponseHandler.write(context, command, writePromise);
+        writePromise.setSuccess();
 
-        requestResponseHandler.write(channelHandlerContext, command, writePromise);
-        requestResponseHandler.channelInactive(channelHandlerContext);
+        requestResponseHandler.channelInactive(context);
 
-        final CompletionException completionException =
-                assertThrows(CompletionException.class, () -> assertTimeoutPreemptively(Duration.ofSeconds(1), command.getFuture()::join));
-
-        assertTrue(completionException.getCause() instanceof IOException);
-    }
-
-    @Test
-    void queuedResponse() {
-        final RedisCommand<Long> llenCommand =
-                new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "Test");
-
-        final RedisCommand<Long> memoryUsageCommand =
-                new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER,
-                        RedisKeyword.MEMORY,
-                        RedisKeyword.USAGE,
-                        "Test");
-
-        final Channel channel = new EmbeddedChannel();
-        final MockChannelHandlerContext channelHandlerContext = new MockChannelHandlerContext(channel);
-
-        requestResponseHandler.write(channelHandlerContext, llenCommand, channel.newPromise());
-        requestResponseHandler.write(channelHandlerContext, memoryUsageCommand, channel.newPromise());
-
-        final long expectedMemoryUsageResponse = 128;
-
-        requestResponseHandler.channelRead(channelHandlerContext, "QUEUED");
-        requestResponseHandler.channelRead(channelHandlerContext, expectedMemoryUsageResponse);
-
-        assertEquals(expectedMemoryUsageResponse, assertTimeoutPreemptively(Duration.ofSeconds(1), memoryUsageCommand.getFuture()::join));
-        assertFalse(llenCommand.getFuture().isDone());
+        verify(responseConsumer).handleCommandFailure(command, RedisRequestResponseHandler.CHANNEL_CLOSED_EXCEPTION);
     }
 }

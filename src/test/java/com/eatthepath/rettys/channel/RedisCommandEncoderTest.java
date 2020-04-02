@@ -1,11 +1,9 @@
 package com.eatthepath.rettys.channel;
 
 import com.eatthepath.rettys.RedisCommand;
-import com.eatthepath.rettys.RedisCommandEncoder;
-import com.eatthepath.rettys.RedisKeyword;
-import com.eatthepath.rettys.RedisResponseConverters;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,6 +16,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.mock;
 
 class RedisCommandEncoderTest {
 
@@ -30,14 +29,14 @@ class RedisCommandEncoderTest {
 
     @Test
     void encode() {
-        final RedisCommand<Long> command = new RedisCommand<>(RedisResponseConverters.INTEGER_CONVERTER, RedisKeyword.LLEN, "mylist");
+        final RedisCommand command = new RedisCommand("LLEN", "mylist");
         final ByteBuf expectedOutput =
                 Unpooled.wrappedBuffer("*2\r\n$4\r\nLLEN\r\n$6\r\nmylist\r\n".getBytes(StandardCharsets.US_ASCII));
 
         final ByteBuf out = Unpooled.buffer();
 
         try {
-            redisCommandEncoder.encode(null, command, out);
+            redisCommandEncoder.encode(mock(ChannelHandlerContext.class), command, out);
 
             assertEquals(expectedOutput, out);
         } finally {
@@ -54,7 +53,6 @@ class RedisCommandEncoderTest {
 
     static Stream<Arguments> redisValueProvider() {
         return Stream.of(
-                arguments(RedisKeyword.LLEN, new byte[] { 'L', 'L', 'E', 'N' }),
                 arguments(new byte[] { 1, 2, 3 }, new byte[] { 1, 2, 3 }),
                 arguments("Test!", new byte[] { 'T', 'e', 's', 't', '!' }),
                 arguments(12, new byte[] { '1', '2' }),
