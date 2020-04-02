@@ -1,5 +1,9 @@
-package com.eatthepath.rettys;
+package com.eatthepath.rettys.channel;
 
+import com.eatthepath.rettys.RedisCommand;
+import com.eatthepath.rettys.RedisCommandEncoder;
+import com.eatthepath.rettys.RedisKeyword;
+import com.eatthepath.rettys.RedisResponseConverters;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.BeforeEach;

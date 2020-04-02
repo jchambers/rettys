@@ -1,5 +1,6 @@
-package com.eatthepath.rettys;
+package com.eatthepath.rettys.channel;
 
+import com.eatthepath.rettys.channel.RedisFrameDecoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.BeforeEach;

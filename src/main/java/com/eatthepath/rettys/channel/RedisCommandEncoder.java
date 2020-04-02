@@ -1,5 +1,6 @@
-package com.eatthepath.rettys;
+package com.eatthepath.rettys.channel;
 
+import com.eatthepath.rettys.RedisCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -29,7 +30,7 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
     protected void encode(final ChannelHandlerContext context, final RedisCommand command, final ByteBuf out) {
         // All Redis commands are sent as an array of bulk strings. Start with the array header.
         out.writeByte(ARRAY_PREFIX);
-        writeIntAsRedisIntegerBytes(command.getComponents().length, out);
+        writeUnsignedIntAsRedisIntegerBytes(command.getComponents().length, out);
         out.writeBytes(CRLF);
 
         // Each argument (including the name of the command) is written as a Redis bulk string
@@ -40,7 +41,7 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
                 final byte[] bulkStringBytes = getBulkStringBytes(component);
 
                 out.writeByte(BULK_STRING_PREFIX);
-                writeIntAsRedisIntegerBytes(bulkStringBytes.length, out);
+                writeUnsignedIntAsRedisIntegerBytes(bulkStringBytes.length, out);
                 out.writeBytes(CRLF);
                 out.writeBytes(bulkStringBytes);
                 out.writeBytes(CRLF);
@@ -53,9 +54,7 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
 
         final byte[] bulkStringBytes;
 
-        if (redisValue instanceof RedisKeyword) {
-            bulkStringBytes = ((RedisKeyword) redisValue).getBulkStringBytes();
-        } else if (redisValue instanceof byte[]) {
+        if (redisValue instanceof byte[]) {
             bulkStringBytes = (byte[]) redisValue;
         } else if (redisValue instanceof String) {
             bulkStringBytes = ((String) redisValue).getBytes(charset);
@@ -68,7 +67,7 @@ class RedisCommandEncoder extends MessageToByteEncoder<RedisCommand> {
         return bulkStringBytes;
     }
 
-    private static void writeIntAsRedisIntegerBytes(final int i, final ByteBuf out) {
+    private static void writeUnsignedIntAsRedisIntegerBytes(final int i, final ByteBuf out) {
         out.writeBytes(String.valueOf(i).getBytes(StandardCharsets.US_ASCII));
     }
 }
