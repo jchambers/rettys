@@ -1,5 +1,6 @@
-package com.eatthepath.rettys;
+package com.eatthepath.rettys.channel;
 
+import com.eatthepath.rettys.RedisException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;

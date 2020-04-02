@@ -1,4 +1,4 @@
-package com.eatthepath.rettys;
+package com.eatthepath.rettys.channel;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

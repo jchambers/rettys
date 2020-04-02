@@ -1,5 +1,7 @@
-package com.eatthepath.rettys;
+package com.eatthepath.rettys.channel;
 
+import com.eatthepath.rettys.*;
+import com.eatthepath.rettys.channel.RedisRequestResponseHandler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
