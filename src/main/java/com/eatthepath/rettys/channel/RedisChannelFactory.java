@@ -1,6 +1,6 @@
 package com.eatthepath.rettys.channel;
 
-import com.eatthepath.rettys.RedisResponseConsumer;
+import com.eatthepath.rettys.RedisMessageConsumer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -14,22 +14,25 @@ import io.netty.handler.ssl.SslHandler;
 
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
+import java.util.concurrent.Executor;
 
 public class RedisChannelFactory {
 
     private final EventLoopGroup eventLoopGroup;
+    private final Executor handlerExecutor;
 
     private final Charset charset;
     private final boolean useSsl;
 
-    public RedisChannelFactory(final EventLoopGroup eventLoopGroup, final Charset charset, final boolean useSsl) {
-        this.eventLoopGroup = eventLoopGroup;
+    public RedisChannelFactory(final EventLoopGroup ioEventLoopGroup, final Executor handlerExecutor, final Charset charset, final boolean useSsl) {
+        this.eventLoopGroup = ioEventLoopGroup;
+        this.handlerExecutor = handlerExecutor;
 
         this.charset = charset;
         this.useSsl = useSsl;
     }
 
-    public ChannelFuture createChannel(final SocketAddress inetSocketAddress, final RedisResponseConsumer responseConsumer) {
+    public ChannelFuture createChannel(final SocketAddress inetSocketAddress, final RedisMessageConsumer responseConsumer) {
         final Bootstrap bootstrap = new Bootstrap();
         bootstrap.channel(NioSocketChannel.class);
         bootstrap.group(eventLoopGroup);
@@ -52,7 +55,7 @@ public class RedisChannelFactory {
                 pipeline.addLast(new RedisFrameLoggingHandler(charset));
                 pipeline.addLast(new RedisValueDecoder());
                 pipeline.addLast(new RedisCommandEncoder(charset));
-                pipeline.addLast(new RedisRequestResponseHandler(responseConsumer));
+                pipeline.addLast(new RedisMessageHandler(responseConsumer, handlerExecutor));
             }
         });
 
