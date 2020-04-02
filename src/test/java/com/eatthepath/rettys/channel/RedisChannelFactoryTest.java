@@ -11,9 +11,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -30,23 +27,20 @@ public class RedisChannelFactoryTest {
     private RedisChannelFactory redisChannelFactory;
 
     private static EventLoopGroup eventLoopGroup;
-    private static ExecutorService handlerExecutor;
 
     @BeforeAll
     static void setUpBeforeClass() {
         eventLoopGroup = new NioEventLoopGroup(1);
-        handlerExecutor = Executors.newSingleThreadExecutor();
     }
 
     @AfterAll
     static void tearDownAfterClass() {
         eventLoopGroup.shutdownGracefully();
-        handlerExecutor.shutdown();
     }
 
     @BeforeEach
     void setUp() {
-        redisChannelFactory = new RedisChannelFactory(eventLoopGroup, handlerExecutor, StandardCharsets.UTF_8, false);
+        redisChannelFactory = new RedisChannelFactory(eventLoopGroup, StandardCharsets.UTF_8, false);
     }
 
     @Test

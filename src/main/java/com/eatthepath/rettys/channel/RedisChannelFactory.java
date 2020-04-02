@@ -14,19 +14,16 @@ import io.netty.handler.ssl.SslHandler;
 
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
-import java.util.concurrent.Executor;
 
 public class RedisChannelFactory {
 
     private final EventLoopGroup eventLoopGroup;
-    private final Executor handlerExecutor;
 
     private final Charset charset;
     private final boolean useSsl;
 
-    public RedisChannelFactory(final EventLoopGroup ioEventLoopGroup, final Executor handlerExecutor, final Charset charset, final boolean useSsl) {
+    public RedisChannelFactory(final EventLoopGroup ioEventLoopGroup, final Charset charset, final boolean useSsl) {
         this.eventLoopGroup = ioEventLoopGroup;
-        this.handlerExecutor = handlerExecutor;
 
         this.charset = charset;
         this.useSsl = useSsl;
@@ -55,7 +52,7 @@ public class RedisChannelFactory {
                 pipeline.addLast(new RedisFrameLoggingHandler(charset));
                 pipeline.addLast(new RedisValueDecoder());
                 pipeline.addLast(new RedisCommandEncoder(charset));
-                pipeline.addLast(new RedisMessageHandler(responseConsumer, handlerExecutor));
+                pipeline.addLast(new RedisMessageHandler(responseConsumer));
             }
         });
 

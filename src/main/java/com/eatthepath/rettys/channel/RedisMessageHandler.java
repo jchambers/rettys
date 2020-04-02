@@ -7,26 +7,24 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.util.concurrent.Executor;
 
 /**
- * A handler that dispatches messages from Redis to an out-of-pipeline message consumer on a non-IO thread.
+ * A handler that dispatches messages from Redis to an out-of-pipeline message consumer.
  */
 class RedisMessageHandler extends ChannelInboundHandlerAdapter {
 
     private final RedisMessageConsumer messageConsumer;
-    private final Executor executor;
 
-    RedisMessageHandler(final RedisMessageConsumer messageConsumer, final Executor executor) {
+    RedisMessageHandler(final RedisMessageConsumer messageConsumer) {
         this.messageConsumer = messageConsumer;
-        this.executor = executor;
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext context, final Object message) {
-        executor.execute(() -> messageConsumer.consumeMessage(context.channel(), message));
+        messageConsumer.consumeMessage(context.channel(), message);
     }
 
     @Override
     public void channelInactive(final ChannelHandlerContext context) {
-        executor.execute(() -> messageConsumer.handleChannelClosure(context.channel()));
+        messageConsumer.handleChannelClosure(context.channel());
         context.fireChannelInactive();
     }
 }

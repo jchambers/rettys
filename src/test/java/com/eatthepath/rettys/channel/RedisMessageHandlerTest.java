@@ -2,13 +2,9 @@ package com.eatthepath.rettys.channel;
 
 import com.eatthepath.rettys.*;
 import io.netty.channel.*;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
 import java.util.concurrent.Executor;
 
 import static org.mockito.Mockito.*;
@@ -30,7 +26,7 @@ class RedisMessageHandlerTest {
         }).when(immediateExecutor).execute(any(Runnable.class));
 
         messageConsumer = mock(RedisMessageConsumer.class);
-        messageHandler = new RedisMessageHandler(messageConsumer, immediateExecutor);
+        messageHandler = new RedisMessageHandler(messageConsumer);
 
         final Channel channel = mock(Channel.class);
 
