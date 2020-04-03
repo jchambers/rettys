@@ -1,13 +1,12 @@
 package com.eatthepath.rettys;
 
-import io.netty.channel.Channel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +35,7 @@ class CommandResponseConsumerTest {
         final String message = "Test!";
 
         commandResponseConsumer.addPendingFuture(pendingFuture);
-        commandResponseConsumer.consumeMessage(mock(Channel.class), message);
+        commandResponseConsumer.consumeMessage(message);
 
         assertEquals(message, pendingFuture.join());
     }
@@ -47,7 +46,7 @@ class CommandResponseConsumerTest {
         final RedisException redisException = new RedisException("TEST Test exception");
 
         commandResponseConsumer.addPendingFuture(pendingFuture);
-        commandResponseConsumer.consumeMessage(mock(Channel.class), redisException);
+        commandResponseConsumer.consumeMessage(redisException);
 
         final CompletionException completionException = assertThrows(CompletionException.class, pendingFuture::join);
         assertEquals(redisException, completionException.getCause());
@@ -58,7 +57,7 @@ class CommandResponseConsumerTest {
         final CompletableFuture<Object> pendingFuture = new CompletableFuture<>();
 
         commandResponseConsumer.addPendingFuture(pendingFuture);
-        commandResponseConsumer.handleChannelClosure(mock(Channel.class));
+        commandResponseConsumer.handleChannelClosure();
 
         final CompletionException completionException = assertThrows(CompletionException.class, pendingFuture::join);
         assertTrue(completionException.getCause() instanceof IOException);

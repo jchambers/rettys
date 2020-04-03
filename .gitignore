@@ -26,3 +26,6 @@ target/
 
 # OS detritus
 .DS_Store
+
+# Redis files
+*.rdb
