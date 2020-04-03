@@ -12,11 +12,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
- * A message consumer that pairs responses from a Redis server to pending futures. A {@code CommandResponseConsumer} is
- * assumed to be paired with a single Redis {@link Channel}. {@code CommandResponseConsumers} complete futures via an
- * {@link Executor} provided at construction time to avoid blocking (or bogging down) IO threads.
+ * A message consumer that pairs responses from a Redis server to pending futures. {@code CommandResponseConsumers}
+ * complete futures via an {@link Executor} provided at construction time to avoid blocking (or bogging down) IO
+ * threads.
  */
-class CommandResponseConsumer implements RedisMessageConsumer {
+class CommandResponseConsumer implements SingleChannelMessageConsumer {
     private final Deque<CompletableFuture<Object>> pendingFutures = new ArrayDeque<>();
     private final Executor handlerExecutor;
 
@@ -32,6 +32,10 @@ class CommandResponseConsumer implements RedisMessageConsumer {
      */
     CommandResponseConsumer(final Executor handlerExecutor) {
         this.handlerExecutor = handlerExecutor;
+    }
+
+    protected Executor getHandlerExecutor() {
+        return handlerExecutor;
     }
 
     /**
@@ -51,11 +55,10 @@ class CommandResponseConsumer implements RedisMessageConsumer {
      * exceptionally with a {@link RedisException}. In either case, completion of the future takes place via the
      * {@link Executor} provided at construction time.
      *
-     * @param source the channel from which the message was received
      * @param message the message sent by the server
      */
     @Override
-    public void consumeMessage(final Channel source, final Object message) {
+    public void consumeMessage(final Object message) {
         try {
             final CompletableFuture<Object> pendingFuture = pendingFutures.removeFirst();
             handlerExecutor.execute(() -> {
@@ -73,11 +76,9 @@ class CommandResponseConsumer implements RedisMessageConsumer {
     /**
      * Completes all pending futures exceptionally with the understanding that they will never receive a reply from the
      * now-closed channel.
-     *
-     * @param channel the channel that closed
      */
     @Override
-    public void handleChannelClosure(final Channel channel) {
+    public void handleChannelClosure() {
         pendingFutures.forEach(future ->
                 handlerExecutor.execute(() -> future.completeExceptionally(CHANNEL_CLOSED_EXCEPTION)));
 

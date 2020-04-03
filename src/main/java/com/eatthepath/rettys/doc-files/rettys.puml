@@ -10,15 +10,24 @@ interface KeyedRedisCommand extends RedisCommand {
 
 class RedisClient implements RedisMessageConsumer {
     Stream<String> scan()
+    Future<Void> subscribeChannel(PubSubListener listener, String... channels)
+    Future<Void> subscribePattern(PubSubListener listener, String... patterns)
+    Future<Void> unsubscribeChannel(PubSubListener listener, String... channels)
+    Future<Void> unsubscribeChannel(String... channels);
+    Future<Void> unsubscribeChannels();
 }
 
 interface RedisMessageConsumer {
-    void consumeMessage(Channel, Object)
-    void handleChannelClosure(Channel)
+    void consumeMessage(Channel source, Object message)
+    void handleChannelClosure(Channel channel)
+}
+
+interface PubSubListener {
+    void handlePublishedMessage(String topic, byte[] message)
 }
 
 interface RedisCommandExecutor {
-    CompletableFuture<Object> executeCommand(RedisCommand)
+    CompletableFuture<Object> executeCommand(RedisCommand command)
 }
 
 RedisChannel o-- RedisMessageConsumer
