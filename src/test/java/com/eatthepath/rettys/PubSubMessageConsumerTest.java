@@ -11,19 +11,13 @@ import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 class PubSubMessageConsumerTest {
 
     private PubSubMessageConsumer pubSubMessageConsumer;
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
-
-    private static final String CHANNEL_SUBSCRIBE_MESSAGE_TYPE = "subscribe";
-    private static final String CHANNEL_UNSUBSCRIBE_MESSAGE_TYPE = "unsubscribe";
-    private static final String PATTERN_SUBSCRIBE_MESSAGE_TYPE = "psubscribe";
-    private static final String PATTERN_UNSUBSCRIBE_MESSAGE_TYPE = "punsubscribe";
 
     @BeforeEach
     void setUp() {
@@ -42,44 +36,151 @@ class PubSubMessageConsumerTest {
     }
 
     @Test
-    void addPendingChannelSubscriptionFuture() {
+    void testAddPendingSubscriptionFuture() {
+        assertThrows(IllegalArgumentException.class,
+                () -> pubSubMessageConsumer.addPendingSubscriptionFuture(new CompletableFuture<>(), 0));
     }
 
     @Test
-    void addPendingPatternSubscriptionFuture() {
+    void testAddPendingUnsubscriptionFuture() {
+        assertDoesNotThrow(
+                () -> pubSubMessageConsumer.addPendingUnsubscriptionFuture(new CompletableFuture<>(), 0));
     }
 
     @Test
-    void addPendingUnsubscriptionFuture() {
+    void testAddChannelListener() {
+        assertThrows(IllegalArgumentException.class,
+                () -> pubSubMessageConsumer.addChannelListener(mock(PubSubListener.class)));
     }
 
     @Test
-    void addPendingPatternUnsubscriptionFuture() {
+    void testAddPatternListener() {
+        assertThrows(IllegalArgumentException.class,
+                () -> pubSubMessageConsumer.addPatternListener(mock(PubSubListener.class)));
     }
 
     @Test
-    void addListener() {
+    void testRemoveChannelListener() {
+        final String channel = "channel";
+        final String message = "Message!";
+
+        {
+            final PubSubListener firstListener = mock(PubSubListener.class);
+            final PubSubListener secondListener = mock(PubSubListener.class);
+
+            pubSubMessageConsumer.addChannelListener(firstListener, channel);
+            pubSubMessageConsumer.addChannelListener(secondListener, channel);
+            pubSubMessageConsumer.removeChannelListener(firstListener, channel);
+
+            pubSubMessageConsumer.consumeMessage(buildPublishedChannelMessage(channel, message));
+
+            verifyNoInteractions(firstListener);
+            verify(secondListener).handlePublishedMessage(channel, message.getBytes(CHARSET));
+        }
+
+        {
+            final PubSubListener firstListener = mock(PubSubListener.class);
+            final PubSubListener secondListener = mock(PubSubListener.class);
+
+            pubSubMessageConsumer.addChannelListener(firstListener, channel);
+            pubSubMessageConsumer.addChannelListener(secondListener, channel);
+            pubSubMessageConsumer.removeChannelListener(firstListener);
+
+            pubSubMessageConsumer.consumeMessage(buildPublishedChannelMessage(channel, message));
+
+            verifyNoInteractions(firstListener);
+            verify(secondListener).handlePublishedMessage(channel, message.getBytes(CHARSET));
+        }
     }
 
     @Test
-    void addPatternListener() {
-    }
+    void testRemovePatternListener() {
+        final String pattern = "c*";
+        final String channel = "channel";
+        final String message = "Message!";
 
-    @Test
-    void removeChannelListener() {
-    }
+        {
+            final PubSubListener firstListener = mock(PubSubListener.class);
+            final PubSubListener secondListener = mock(PubSubListener.class);
 
-    @Test
-    void removePatternListener() {
+            pubSubMessageConsumer.addPatternListener(firstListener, pattern);
+            pubSubMessageConsumer.addPatternListener(secondListener, pattern);
+            pubSubMessageConsumer.removePatternListener(firstListener, pattern);
+
+            pubSubMessageConsumer.consumeMessage(buildPublishedPatternMessage(pattern, channel, message));
+
+            verifyNoInteractions(firstListener);
+            verify(secondListener).handlePublishedMessage(channel, message.getBytes(CHARSET));
+        }
+
+        {
+            final PubSubListener firstListener = mock(PubSubListener.class);
+            final PubSubListener secondListener = mock(PubSubListener.class);
+
+            pubSubMessageConsumer.addPatternListener(firstListener, pattern);
+            pubSubMessageConsumer.addPatternListener(secondListener, pattern);
+            pubSubMessageConsumer.removePatternListener(firstListener);
+
+            pubSubMessageConsumer.consumeMessage(buildPublishedPatternMessage(pattern, channel, message));
+
+            verifyNoInteractions(firstListener);
+            verify(secondListener).handlePublishedMessage(channel, message.getBytes(CHARSET));
+        }
     }
 
     @Test
     void testConsumeMessage() {
-        final CompletableFuture<Object> pingFuture = new CompletableFuture<>();
-        pubSubMessageConsumer.addPendingFuture(pingFuture);
+        {
+            final CompletableFuture<Object> pingFuture = new CompletableFuture<>();
+            pubSubMessageConsumer.addPendingFuture(pingFuture);
 
-        pubSubMessageConsumer.consumeMessage("OK");
-        assertEquals("OK", pingFuture.join());
+            pubSubMessageConsumer.consumeMessage("OK");
+            assertEquals("OK", pingFuture.join());
+        }
+
+        {
+            final CompletableFuture<Object> lrangeFuture = new CompletableFuture<>();
+            pubSubMessageConsumer.addPendingFuture(lrangeFuture);
+
+            final Object[] message = { "subscribe".getBytes(StandardCharsets.US_ASCII), new byte[1], new byte[2] };
+
+            pubSubMessageConsumer.consumeMessage(message);
+
+            assertArrayEquals(message, (Object[]) lrangeFuture.join());
+        }
+
+        {
+            final CompletableFuture<Object> lrangeFuture = new CompletableFuture<>();
+            pubSubMessageConsumer.addPendingFuture(lrangeFuture);
+
+            final Object[] message = { "message".getBytes(StandardCharsets.US_ASCII), new byte[1], 12 };
+
+            pubSubMessageConsumer.consumeMessage(message);
+
+            assertArrayEquals(message, (Object[]) lrangeFuture.join());
+        }
+
+        {
+            final CompletableFuture<Object> lrangeFuture = new CompletableFuture<>();
+            pubSubMessageConsumer.addPendingFuture(lrangeFuture);
+
+            final Object[] message = { "pmessage".getBytes(StandardCharsets.US_ASCII), new byte[1], 12 };
+
+            pubSubMessageConsumer.consumeMessage(message);
+
+            assertArrayEquals(message, (Object[]) lrangeFuture.join());
+        }
+
+        {
+            final CompletableFuture<Object> lrangeFuture = new CompletableFuture<>();
+            pubSubMessageConsumer.addPendingFuture(lrangeFuture);
+
+            final Object[] message = { "test".getBytes(StandardCharsets.US_ASCII), new byte[1], 12 };
+
+            pubSubMessageConsumer.consumeMessage(message);
+
+            assertArrayEquals(message, (Object[]) lrangeFuture.join());
+        }
     }
 
     @Test
@@ -88,34 +189,59 @@ class PubSubMessageConsumerTest {
     }
 
     @Test
-    void consumeSubscribeMessage() {
+    void testConsumeSubscriptionChangeMessage() {
         final CompletableFuture<Object> subscribeFuture = new CompletableFuture<>();
-        pubSubMessageConsumer.addPendingChannelSubscriptionFuture(subscribeFuture, 2);
+        pubSubMessageConsumer.addPendingSubscriptionFuture(subscribeFuture, 2);
 
-        // Make sure unrelated messages don't trigger the future
-        pubSubMessageConsumer.consumeMessage("OK");
-        pubSubMessageConsumer.consumeMessage("OK");
+        pubSubMessageConsumer.consumeMessage(buildSubscriptionMessage("first", 1));
         assertFalse(subscribeFuture.isDone());
 
-        // Make sure insufficient messages of the expected type don't trigger the future
-        pubSubMessageConsumer.consumeMessage(buildSubscriptionChangeMessage(CHANNEL_SUBSCRIBE_MESSAGE_TYPE, "first", 1));
-        assertFalse(subscribeFuture.isDone());
-
-        pubSubMessageConsumer.consumeMessage(buildSubscriptionChangeMessage(CHANNEL_SUBSCRIBE_MESSAGE_TYPE, "second", 2));
+        pubSubMessageConsumer.consumeMessage(buildSubscriptionMessage("second", 2));
         assertTrue(subscribeFuture.isDone());
     }
 
     @Test
-    void handleChannelMessage() {
+    void testHandleChannelMessage() {
+        final String firstChannel = "first";
+        final String secondChannel = "second";
+
+        final String firstMessage = "First message";
+        final String secondMessage = "Second message";
+
+        final PubSubListener listener = mock(PubSubListener.class);
+        pubSubMessageConsumer.addChannelListener(listener, firstChannel, secondChannel);
+
+        pubSubMessageConsumer.consumeMessage(buildPublishedChannelMessage(firstChannel, firstMessage));
+        pubSubMessageConsumer.consumeMessage(buildPublishedChannelMessage(secondChannel, secondMessage));
+
+        verify(listener).handlePublishedMessage(firstChannel, firstMessage.getBytes(CHARSET));
+        verify(listener).handlePublishedMessage(secondChannel, secondMessage.getBytes(CHARSET));
     }
 
     @Test
-    void handlePatternMessage() {
+    void testHandlePatternMessage() {
+        final String firstPattern = "f*";
+        final String secondPattern = "s*";
+
+        final String firstChannel = "first";
+        final String secondChannel = "second";
+
+        final String firstMessage = "First message";
+        final String secondMessage = "Second message";
+
+        final PubSubListener listener = mock(PubSubListener.class);
+        pubSubMessageConsumer.addPatternListener(listener, firstPattern, secondPattern);
+
+        pubSubMessageConsumer.consumeMessage(buildPublishedPatternMessage(firstPattern, firstChannel, firstMessage));
+        pubSubMessageConsumer.consumeMessage(buildPublishedPatternMessage(secondPattern, secondChannel, secondMessage));
+
+        verify(listener).handlePublishedMessage(firstChannel, firstMessage.getBytes(CHARSET));
+        verify(listener).handlePublishedMessage(secondChannel, secondMessage.getBytes(CHARSET));
     }
 
-    private static Object[] buildSubscriptionChangeMessage(final String messageType, final String topic, final long activeSubscriptionCount) {
+    private static Object[] buildSubscriptionMessage(final String topic, final long activeSubscriptionCount) {
         return new Object[] {
-                messageType.getBytes(StandardCharsets.US_ASCII),
+                "subscribe".getBytes(StandardCharsets.US_ASCII),
                 topic.getBytes(CHARSET),
                 activeSubscriptionCount
         };
