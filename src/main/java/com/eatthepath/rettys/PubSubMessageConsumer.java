@@ -26,12 +26,10 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
     private final Map<String, Set<PubSubListener>> channelSubscriptions = new HashMap<>();
     private final Map<String, Set<PubSubListener>> patternSubscriptions = new HashMap<>();
 
-    private final Map<PubSubMessageType, Deque<Integer>> pendingEventCountsByMessageType = new EnumMap<>(PubSubMessageType.class);
-    private final Map<PubSubMessageType, Integer> accumulatedEventCounts = new EnumMap<>(PubSubMessageType.class);
+    private final Deque<Integer> pendingEventCounts = new ArrayDeque<>();
+    private int subscriptionEventCount = 0;
 
     private static final int UNSUBSCRIBE_ALL = -1;
-
-    private static final Deque<Integer> EMPTY_DEQUE = new ArrayDeque<>(0);
 
     private static final Logger log = LoggerFactory.getLogger(PubSubMessageConsumer.class);
 
@@ -80,51 +78,33 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
      *
      * @param subscriptionFuture the future to be completed when {@code channelCount} subscription messages have been
      *                           received from the server
-     * @param channelCount the number of subscription messages required to complete the given future
+     * @param topicCount the number of subscription messages required to complete the given future; must be positive
      */
-    public void addPendingChannelSubscriptionFuture(final CompletableFuture<Object> subscriptionFuture, final int channelCount) {
-        addPendingSubscriptionFuture(subscriptionFuture, PubSubMessageType.SUBSCRIBE, channelCount);
-    }
-
-    /**
-     * Adds a future that expects one or more pattern subscription messages from the Redis server. Futures will be
-     * completed when the given number of pattern subscription messages have been received from the server.
-     *
-     * @param subscriptionFuture the future to be completed when {@code patternCount} pattern subscription messages have
-     *                           been received from the server
-     * @param patternCount the number of subscription messages required to complete the given future
-     */
-    public void addPendingPatternSubscriptionFuture(final CompletableFuture<Object> subscriptionFuture, final int patternCount) {
-        addPendingSubscriptionFuture(subscriptionFuture, PubSubMessageType.PATTERN_SUBSCRIBE, patternCount);
-    }
-
-    private void addPendingSubscriptionFuture(final CompletableFuture<Object> subscriptionFuture, final PubSubMessageType subscriptionType, final int topicCount) {
+    public void addPendingSubscriptionFuture(final CompletableFuture<Object> subscriptionFuture, final int topicCount) {
         if (topicCount > 0) {
-            pendingEventCountsByMessageType.computeIfAbsent(subscriptionType, messageType -> new ArrayDeque<>())
-                    .addLast(topicCount);
-
+            pendingEventCounts.addLast(topicCount);
             addPendingFuture(subscriptionFuture);
         } else {
             throw new IllegalArgumentException("Number of topics must be positive, but was actually " + topicCount);
         }
     }
 
-    public void addPendingUnsubscriptionFuture(final CompletableFuture<Object> unsubscriptionFuture, final int channelCount) {
-        addPendingUnsubscriptionFuture(unsubscriptionFuture, PubSubMessageType.UNSUBSCRIBE, channelCount);
-    }
-
-    public void addPendingPatternUnsubscriptionFuture(final CompletableFuture<Object> unsubscriptionFuture, final int patternCount) {
-        addPendingUnsubscriptionFuture(unsubscriptionFuture, PubSubMessageType.PATTERN_UNSUBSCRIBE, patternCount);
-    }
-
-    private void addPendingUnsubscriptionFuture(final CompletableFuture<Object> unsubscriptionFuture, final PubSubMessageType unsubscriptionType, final int topicCount) {
-        pendingEventCountsByMessageType.computeIfAbsent(unsubscriptionType, messageType -> new ArrayDeque<>())
-                .addLast(topicCount > 0 ? topicCount : UNSUBSCRIBE_ALL);
-
+    /**
+     * Adds a future that expects one or more unsubscription messages from the Redis server. Futures will be completed
+     * when the given number of unsubscription messages have been received from the server.
+     *
+     * @param unsubscriptionFuture the future to be completed when {@code channelCount} unsubscription messages have
+     *                             been received from the server
+     * @param topicCount the number of unsubscription messages required to complete the given future; may be zero, in
+     *                   which case the given future will be notified when the server sends a message reporting zero
+     *                   active subscriptions
+     */
+    public void addPendingUnsubscriptionFuture(final CompletableFuture<Object> unsubscriptionFuture, final int topicCount) {
+        pendingEventCounts.addLast(topicCount > 0 ? topicCount : UNSUBSCRIBE_ALL);
         addPendingFuture(unsubscriptionFuture);
     }
 
-    public void addListener(final PubSubListener listener, final String... channelNames) {
+    public void addChannelListener(final PubSubListener listener, final String... channelNames) {
         addListener(listener, channelSubscriptions, channelNames);
     }
 
@@ -132,7 +112,8 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         addListener(listener, patternSubscriptions, patterns);
     }
 
-    private void addListener(final PubSubListener listener, final Map<String, Set<PubSubListener>> listenerMap, final String... topics) {
+    private static void addListener(final PubSubListener listener, final Map<String, Set<PubSubListener>> listenerMap, final String... topics) {
+        // TODO Synchronization
         if (Objects.requireNonNull(topics, "List of topics must not be null").length > 0) {
             for (final String topic : topics) {
                 listenerMap.computeIfAbsent(topic, c -> new HashSet<>()).add(listener);
@@ -150,7 +131,7 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         removeListener(listener, patternSubscriptions, patterns);
     }
 
-    private void removeListener(final PubSubListener listener, final Map<String, Set<PubSubListener>> listenerMap, final String... topics) {
+    private static void removeListener(final PubSubListener listener, final Map<String, Set<PubSubListener>> listenerMap, final String... topics) {
         // TODO Synchronization
         if (topics == null || topics.length == 0) {
             // No topics were specified, so remove the given listener from ALL topics
@@ -179,7 +160,7 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
                         case PATTERN_SUBSCRIBE:
                         case PATTERN_UNSUBSCRIBE: {
                             if (messageArray.length == 3 && messageArray[2] instanceof Long) {
-                                handleSubscriptionChangeEvent(messageType, (Long) messageArray[2]);
+                                handleSubscriptionChangeEvent((Long) messageArray[2]);
                             } else {
                                 // This isn't the "shape" of message we'd expect; it's possible this is a response to
                                 // another command (even though that would be really weird).
@@ -216,9 +197,9 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
                         }
 
                         default: {
-                            // The message is an array, but doesn't appear to be a pub/sub event, and so it may be a
-                            // response to another command.
-                            super.consumeMessage(message);
+                            // This should never happen; this means that we've added something to the PubSubMessageType
+                            // enum, but haven't updated this switch statement.
+                            throw new RuntimeException("Unexpected pub/sub message type: " + messageType);
                         }
                     }
                 } catch (final IllegalArgumentException e) {
@@ -231,34 +212,34 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         }
     }
 
-    private void handleSubscriptionChangeEvent(final PubSubMessageType messageType, final long subscriptionCount) {
-        final Deque<Integer> pendingEventCounts = pendingEventCountsByMessageType.getOrDefault(messageType, EMPTY_DEQUE);
-
+    private void handleSubscriptionChangeEvent(final long subscriptionCount) {
         if (!pendingEventCounts.isEmpty()) {
             final int expectedCount = pendingEventCounts.peek();
-            final int accumulatedCount = accumulatedEventCounts.merge(messageType, 1, Integer::sum);
+            subscriptionEventCount += 1;
 
-            if (accumulatedCount == expectedCount || (expectedCount == UNSUBSCRIBE_ALL && subscriptionCount == 0)) {
+            if (subscriptionEventCount == expectedCount || (expectedCount == UNSUBSCRIBE_ALL && subscriptionCount == 0)) {
                 // We've received as many subscription events as we were expecting and should fulfill the next pending
                 // future.
                 pendingEventCounts.removeFirst();
-                accumulatedEventCounts.put(messageType, 0);
+                subscriptionEventCount = 0;
 
                 consumeMessage(subscriptionCount);
             }
         } else {
-            log.error("Received subscription event ({}), but not expecting any events of that type.", messageType);
+            log.error("Received unexpected subscription change event.");
         }
     }
 
-    void handleChannelMessage(final String channelName, final byte[] messageBytes) {
+    private void handleChannelMessage(final String channelName, final byte[] messageBytes) {
+        // TODO Synchronization
         channelSubscriptions.getOrDefault(channelName, Collections.emptySet())
                 .forEach(pubSubListener ->
                         getHandlerExecutor().execute(() ->
                                 pubSubListener.handlePublishedMessage(channelName, messageBytes)));
     }
 
-    void handlePatternMessage(final String pattern, final String channelName, final byte[] messageBytes) {
+    private void handlePatternMessage(final String pattern, final String channelName, final byte[] messageBytes) {
+        // TODO Synchronization
         patternSubscriptions.getOrDefault(pattern, Collections.emptySet())
                 .forEach(pubSubListener ->
                         getHandlerExecutor().execute(() ->
