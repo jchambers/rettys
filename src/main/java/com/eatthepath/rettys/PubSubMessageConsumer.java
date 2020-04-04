@@ -104,10 +104,26 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         addPendingFuture(unsubscriptionFuture);
     }
 
+    /**
+     * Adds a listener for messages published to the named channels. Note that listener registration does not affect the
+     * channels to which a client is actually subscribed, and subscriptions must be managed separately.
+     *
+     * @param listener the listener to be notified when messages are published on a named channel
+     * @param channelNames the channels for which the listener should receive notifications; must not be {@code null} or
+     *                     empty
+     */
     public void addChannelListener(final PubSubListener listener, final String... channelNames) {
         addListener(listener, channelSubscriptions, channelNames);
     }
 
+    /**
+     * Adds a listener for messages published to the given patterns. Note that listener registration does not affect the
+     * patterns to which a client is actually subscribed, and subscriptions must be managed separately.
+     *
+     * @param listener the listener to be notified when messages are published on a named channel
+     * @param patterns the patterns for which the listener should receive notifications; must not be {@code null} or
+     *                     empty
+     */
     public void addPatternListener(final PubSubListener listener, final String... patterns) {
         addListener(listener, patternSubscriptions, patterns);
     }
@@ -125,10 +141,28 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         }
     }
 
+    /**
+     * Removes a listener from the given channels or from all channels if none are specified. Note that listener
+     * registration does not affect the channels to which a client is actually subscribed, and subscriptions must be
+     * managed separately.
+     *
+     * @param listener the listener to be removed
+     * @param channelNames the channels from which to remove the listener; may be empty or {@code null}, in which case
+     *                     the given listener will be removed from all channels to which it was subscribed
+     */
     public void removeChannelListener(final PubSubListener listener, final String... channelNames) {
         removeListener(listener, channelSubscriptions, channelNames);
     }
 
+    /**
+     * Removes a listener from the given patterns or from all patterns if none are specified. Note that listener
+     * registration does not affect the patterns to which a client is actually subscribed, and subscriptions must be
+     * managed separately.
+     *
+     * @param listener the listener to be removed
+     * @param patterns the patterns from which to remove the listener; may be empty or {@code null}, in which case
+     *                 the given listener will be removed from all patterns to which it was subscribed
+     */
     public void removePatternListener(final PubSubListener listener, final String... patterns) {
         removeListener(listener, patternSubscriptions, patterns);
     }
