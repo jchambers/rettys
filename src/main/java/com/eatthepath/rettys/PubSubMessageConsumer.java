@@ -112,11 +112,13 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         addListener(listener, patternSubscriptions, patterns);
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private static void addListener(final PubSubListener listener, final Map<String, Set<PubSubListener>> listenerMap, final String... topics) {
-        // TODO Synchronization
         if (Objects.requireNonNull(topics, "List of topics must not be null").length > 0) {
-            for (final String topic : topics) {
-                listenerMap.computeIfAbsent(topic, c -> new HashSet<>()).add(listener);
+            synchronized (listenerMap) {
+                for (final String topic : topics) {
+                    listenerMap.computeIfAbsent(topic, c -> new HashSet<>()).add(listener);
+                }
             }
         } else {
             throw new IllegalArgumentException("List of topics must not be empty");
@@ -131,14 +133,18 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
         removeListener(listener, patternSubscriptions, patterns);
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private static void removeListener(final PubSubListener listener, final Map<String, Set<PubSubListener>> listenerMap, final String... topics) {
-        // TODO Synchronization
         if (topics == null || topics.length == 0) {
-            // No topics were specified, so remove the given listener from ALL topics
-            listenerMap.values().forEach(listenerSet -> listenerSet.remove(listener));
+            synchronized (listenerMap) {
+                // No topics were specified, so remove the given listener from ALL topics
+                listenerMap.values().forEach(listenerSet -> listenerSet.remove(listener));
+            }
         } else {
-            for (final String topic : topics) {
-                listenerMap.getOrDefault(topic, Collections.emptySet()).remove(listener);
+            synchronized (listenerMap) {
+                for (final String topic : topics) {
+                    listenerMap.getOrDefault(topic, Collections.emptySet()).remove(listener);
+                }
             }
         }
     }
@@ -231,18 +237,28 @@ class PubSubMessageConsumer extends CommandResponseConsumer {
     }
 
     private void handleChannelMessage(final String channelName, final byte[] messageBytes) {
-        // TODO Synchronization
-        channelSubscriptions.getOrDefault(channelName, Collections.emptySet())
-                .forEach(pubSubListener ->
-                        getHandlerExecutor().execute(() ->
-                                pubSubListener.handlePublishedMessage(channelName, messageBytes)));
+        // This may seem like too much dispatching to the executor, but this method may be called by an IO thread. We
+        // want to make sure we're NOT synchronizing in IO threads, so we dispatch the dispatcher.
+        getHandlerExecutor().execute(() -> {
+            synchronized (channelSubscriptions) {
+                channelSubscriptions.getOrDefault(channelName, Collections.emptySet())
+                        .forEach(pubSubListener ->
+                                getHandlerExecutor().execute(() ->
+                                        pubSubListener.handlePublishedMessage(channelName, messageBytes)));
+            }
+        });
     }
 
     private void handlePatternMessage(final String pattern, final String channelName, final byte[] messageBytes) {
-        // TODO Synchronization
-        patternSubscriptions.getOrDefault(pattern, Collections.emptySet())
-                .forEach(pubSubListener ->
-                        getHandlerExecutor().execute(() ->
-                                pubSubListener.handlePublishedMessage(channelName, messageBytes)));
+        // This may seem like too much dispatching to the executor, but this method may be called by an IO thread. We
+        // want to make sure we're NOT synchronizing in IO threads, so we dispatch the dispatcher.
+        getHandlerExecutor().execute(() -> {
+            synchronized (patternSubscriptions) {
+                patternSubscriptions.getOrDefault(pattern, Collections.emptySet())
+                        .forEach(pubSubListener ->
+                                getHandlerExecutor().execute(() ->
+                                        pubSubListener.handlePublishedMessage(channelName, messageBytes)));
+            }
+        });
     }
 }
